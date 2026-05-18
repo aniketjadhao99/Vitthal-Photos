@@ -8,16 +8,37 @@ const { protect } = require('../middleware/authMiddleware');
 // @access  Private
 router.get('/', protect, async (req, res) => {
   try {
+    // Find all orders for this user
+    const orders = await prisma.order.findMany({
+      where: {
+        OR: [
+          { userId: req.user._id },
+          { email: req.user.email }
+        ]
+      }
+    });
+    const orderIds = orders.map(o => o.id || o._id.toString());
+
     const returns = await prisma.returnRequest.findMany({
       where: {
-        order: { userId: req.user.id }
+        orderId: { in: orderIds }
       },
-      include: { order: true },
       orderBy: { createdAt: 'desc' }
     });
-    const mapped = returns.map(r => ({ ...r, _id: r.id }));
+    
+    // Populate order field manually for each return request
+    const mapped = returns.map(r => {
+      const order = orders.find(o => (o.id || o._id.toString()) === r.orderId.toString());
+      return {
+        ...r.toObject ? r.toObject() : r,
+        _id: r.id || r._id ? (r.id || r._id).toString() : null,
+        order: order
+      };
+    });
+    
     res.json(mapped);
   } catch (error) {
+    console.error('Error fetching return requests:', error);
     res.status(500).json({ message: 'Error fetching returns', error: error.message });
   }
 });
@@ -54,7 +75,7 @@ router.post('/', protect, async (req, res) => {
 
     // Verify order belongs to user
     const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order || order.userId !== req.user.id) {
+    if (!order || order.userId !== req.user._id) {
       return res.status(403).json({ message: 'Not authorized for this order' });
     }
 
@@ -125,8 +146,12 @@ router.put('/:id', protect, async (req, res) => {
 // @access  Private
 router.delete('/:id', protect, async (req, res) => {
   try {
-    const returnRequest = await prisma.returnRequest.findUnique({ where: { id: req.params.id }, include: { order: true } });
-    if (!returnRequest || returnRequest.order.userId !== req.user.id) {
+    const returnRequest = await prisma.returnRequest.findUnique({ where: { id: req.params.id } });
+    if (!returnRequest) {
+      return res.status(404).json({ message: 'Return request not found' });
+    }
+    const order = await prisma.order.findUnique({ where: { id: returnRequest.orderId.toString() } });
+    if (!order || order.userId !== req.user._id) {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
