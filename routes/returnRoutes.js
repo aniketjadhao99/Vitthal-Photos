@@ -68,14 +68,20 @@ router.get('/admin/all', protect, async (req, res) => {
 router.post('/', protect, async (req, res) => {
   try {
     const { orderId, reason, description } = req.body;
+    const { Order } = require('../lib/db');
 
     if (!orderId || !reason) {
       return res.status(400).json({ message: 'Order ID and reason are required' });
     }
 
     // Verify order belongs to user (by user ID or email)
-    const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order || (order.user?.toString() !== req.user._id?.toString() && order.email !== req.user.email)) {
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Check if order belongs to user
+    if (order.user?.toString() !== req.user._id?.toString() && order.email !== req.user.email) {
       return res.status(403).json({ message: 'Not authorized for this order' });
     }
 
@@ -87,7 +93,7 @@ router.post('/', protect, async (req, res) => {
 
     // Check if order is delivered
     if (order.status !== 'delivered') {
-      return res.status(400).json({ message: 'Can only return delivered orders' });
+      return res.status(400).json({ message: 'Can only return delivered orders. Current status: ' + order.status });
     }
 
     const returnRequest = await prisma.returnRequest.create({
