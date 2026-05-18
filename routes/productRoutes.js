@@ -17,8 +17,19 @@ router.get('/', async (req, res) => {
     }));
     res.json(mappedProducts);
   } catch (error) {
-    console.error('Error fetching products:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
+    console.error('⚠️ MongoDB products query failed, using static product catalog fallback:', error.message);
+    try {
+      const staticProducts = require('../Data/products');
+      const mapped = staticProducts.map((p, idx) => ({
+        ...p,
+        _id: `static-product-${idx}`,
+        price: Number(p.basePrice),
+        basePrice: Number(p.basePrice)
+      }));
+      res.json(mapped);
+    } catch (fallbackError) {
+      res.status(500).json({ message: 'Server Error', error: error.message });
+    }
   }
 });
 
@@ -51,7 +62,19 @@ router.get('/trending', async (req, res) => {
     const mappedProducts = products.map(p => ({ ...p.toObject(), _id: p._id.toString(), price: p.basePrice }));
     res.json(mappedProducts);
   } catch (error) {
-    res.status(500).json({ message: 'Server Error' });
+    console.error('⚠️ MongoDB trending query failed, using static product fallback:', error.message);
+    try {
+      const staticProducts = require('../Data/products');
+      const mapped = staticProducts.slice(0, 6).map((p, idx) => ({
+        ...p,
+        _id: `static-product-${idx}`,
+        price: Number(p.basePrice),
+        basePrice: Number(p.basePrice)
+      }));
+      res.json(mapped);
+    } catch (fallbackError) {
+      res.status(500).json({ message: 'Server Error' });
+    }
   }
 });
 
@@ -96,7 +119,36 @@ router.get('/filter', async (req, res) => {
     const mapped = products.map(p => ({ ...p.toObject(), _id: p._id.toString(), price: p.basePrice }));
     res.json({ products: mapped, total, count: products.length, skip, limit });
   } catch (error) {
-    res.status(500).json({ message: 'Server Error', error: error.message });
+    console.error('⚠️ MongoDB filter query failed, using static product catalog fallback:', error.message);
+    try {
+      const staticProducts = require('../Data/products');
+      const { category, search } = req.query;
+      
+      let filtered = staticProducts;
+      if (category && category !== 'all') {
+        // Normalize search to handle plural categories (e.g. God vs Gods)
+        const catSearch = category.toLowerCase();
+        filtered = filtered.filter(p => {
+          const productCat = p.category.toLowerCase();
+          return productCat.includes(catSearch) || catSearch.includes(productCat);
+        });
+      }
+      if (search) {
+        const regex = new RegExp(search, 'i');
+        filtered = filtered.filter(p => regex.test(p.name) || regex.test(p.description));
+      }
+      
+      const mapped = filtered.map((p, idx) => ({
+        ...p,
+        _id: `static-product-${idx}`,
+        price: Number(p.basePrice),
+        basePrice: Number(p.basePrice)
+      }));
+      
+      res.json({ products: mapped, total: mapped.length, count: mapped.length, skip: 0, limit: 20 });
+    } catch (fallbackError) {
+      res.status(500).json({ message: 'Server Error', error: error.message });
+    }
   }
 });
 
@@ -111,10 +163,38 @@ router.get('/:id', async (req, res) => {
         basePrice: Number(product.basePrice)
       });
     } else {
-      res.status(404).json({ message: 'Product not found' });
+      // Check static fallback products
+      const staticProducts = require('../Data/products');
+      const found = staticProducts.find((p, idx) => `static-product-${idx}` === req.params.id);
+      if (found) {
+        res.json({
+          ...found,
+          _id: req.params.id,
+          price: Number(found.basePrice),
+          basePrice: Number(found.basePrice)
+        });
+      } else {
+        res.status(404).json({ message: 'Product not found' });
+      }
     }
   } catch (error) {
-    res.status(500).json({ message: 'Server Error' });
+    console.error('⚠️ MongoDB product details fetch failed, using static product details fallback:', error.message);
+    try {
+      const staticProducts = require('../Data/products');
+      const found = staticProducts.find((p, idx) => `static-product-${idx}` === req.params.id);
+      if (found) {
+        res.json({
+          ...found,
+          _id: req.params.id,
+          price: Number(found.basePrice),
+          basePrice: Number(found.basePrice)
+        });
+      } else {
+        res.status(404).json({ message: 'Product not found' });
+      }
+    } catch (fallbackError) {
+      res.status(500).json({ message: 'Server Error' });
+    }
   }
 });
 
