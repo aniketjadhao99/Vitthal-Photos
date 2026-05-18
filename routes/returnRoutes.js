@@ -73,9 +73,9 @@ router.post('/', protect, async (req, res) => {
       return res.status(400).json({ message: 'Order ID and reason are required' });
     }
 
-    // Verify order belongs to user
+    // Verify order belongs to user (by user ID or email)
     const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order || order.userId !== req.user._id) {
+    if (!order || (order.user?.toString() !== req.user._id?.toString() && order.email !== req.user.email)) {
       return res.status(403).json({ message: 'Not authorized for this order' });
     }
 
