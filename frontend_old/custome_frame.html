@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Frame - Vitthal Photo Frames</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        /* Internal overrides if any, otherwise keep empty */
+    </style>
+</head>
+
+<body>
+
+    <!-- Header Section -->
+    <header>
+        <a href="index.html" style="background-color: transparent;"><img src="assets/images/logo.png" alt=""></a>
+        <div class="search-box">
+            <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="search" id="header-search" placeholder="Search photos..." />
+        </div>
+
+        <nav class="nav-menu">
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About Us</a></li>
+                <li><a href="contact.html">Contact Us</a></li>
+                <li>
+                    <select id="category-select" class="dropdown">
+                        <option value="">Select Frame</option>
+                        <option value="god">God</option>
+                        <option value="warriors">Warriors</option>
+                        <option value="custome_frame">Custom Frame</option>
+                        <option value="new">New Arrivals</option>
+                    </select>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="nav-icons">
+            <a href="cart.html" class="icon-link" style="position:relative;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-cart"
+                    viewBox="0 0 16 16">
+                    <path
+                        d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5M3.102 4l1.313 7h8.17l1.313-7zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4m7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4m-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2m7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2" />
+                </svg>
+                <span class="cart-count" id="cart-count">0</span>
+            </a>
+            <a href="wishlist.html" class="icon-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-heart"
+                    viewBox="0 0 16 16">
+                    <path
+                        d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143q.09.083.176.171a3 3 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15" />
+                </svg>
+            </a>
+            <a href="login.html" class="icon-link" id="person">
+                <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-person"
+                    viewBox="0 0 16 16">
+                    <path
+                        d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z" />
+                </svg>
+            </a>
+            <button class="menu-toggle">☰</button>
+        </div>
+
+        <div class="mobile-menu">
+            <button class="close-menu">&times;</button>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="">About Us</a></li>
+                <li><a href="">Contact Us</a></li>
+                <li>
+                    <select id="category-select-mobile" class="dropdown">
+                        <option value="">Select Frame</option>
+                        <option value="god">God</option>
+                        <option value="warriors">warriors</option>
+                        <option value="custome_frame">custome_frame Frame</option>
+                        <option value="new">New Arrivals</option>
+                    </select>
+                </li>
+                <li><a href="#"><svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor"
+                            class="bi bi-person" viewBox="0 0 16 16">
+                            <path
+                                d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z" />
+                        </svg> Account</a></li>
+            </ul>
+        </div>
+    </header>
+
+
+
+    <section class="custom-frame-section">
+        <div class="container">
+            <div class="breadcrumbs">
+                <a href="index.html">Home</a> &nbsp; > &nbsp; 
+                <a href="custome_frame.html">Custom Frame</a> &nbsp; > &nbsp; 
+                <span>Create Your Own</span>
+            </div>
+            
+            <div class="custom-frame-container">
+                <!-- Preview Section -->
+                <div class="preview-section">
+                    <div class="preview-card">
+                        <div class="price-badge">
+                            <i class="bi bi-tag-fill"></i>
+                            <span id="price-display">₹500</span>
+                        </div>
+                        
+                        <div class="frame-visualizer" id="frame-preview">
+                            <!-- Empty State Message -->
+                            <div class="empty-preview-msg" id="empty-msg">
+                                <i class="bi bi-image"></i>
+                                <p>Upload your photo to see the preview</p>
+                            </div>
+                            <!-- Loader -->
+                            <div id="preview-loader" style="display: none; position: absolute; z-index: 20;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                            <img id="preview-image" src="" alt="Your Photo" style="display: none;">
+                        </div>
+
+                        <div class="crop-toolbar" id="crop-controls" style="display: none;">
+                            <button id="start-crop-btn" class="btn-outline" style="border-width: 1px; padding: 8px;">
+                                <i class="bi bi-crop"></i> Adjust Image
+                            </button>
+                            <button id="apply-crop-btn" class="btn-primary" style="display:none; padding: 8px;">
+                                <i class="bi bi-check2"></i> Apply
+                            </button>
+                            <button id="cancel-crop-btn" class="btn-outline" style="display:none; border-width: 1px; padding: 8px;">
+                                <i class="bi bi-x"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Options Section -->
+                <div class="options-panel">
+                    <div class="option-card">
+                        <h3><i class="bi bi-cloud-upload"></i> Step 1: Upload Photo</h3>
+                        <div class="file-upload-wrapper">
+                            <div class="custom-file-input">
+                                <i class="bi bi-camera"></i>
+                                <span>Click to choose or drag & drop</span>
+                                <p style="font-size: 0.8rem; color: #999; margin-top: 5px;">Supports: JPG, PNG, WEBP (Max 5MB)</p>
+                            </div>
+                            <input type="file" id="photo-upload" accept="image/*">
+                        </div>
+                    </div>
+
+                    <div class="option-card">
+                        <h3><i class="bi bi-palette"></i> Step 2: Choose Frame Style</h3>
+                        <div class="frame-grid">
+                            <div class="frame-thumb selected" data-frame="ornate" style="background-image: url('https://img.freepik.com/free-vector/baroque-stucco-gold-frame-vector-floral-design_53876-170725.jpg');">
+                                <span>Ornate</span>
+                            </div>
+                            <div class="frame-thumb" data-frame="vintage" style="background-image: url('https://img.freepik.com/free-vector/realistic-gold-frame_1017-6401.jpg');">
+                                <span>Vintage</span>
+                            </div>
+                            <div class="frame-thumb" data-frame="modern" style="background-image: url('https://img.freepik.com/free-vector/empty-golden-frame-vector_53876-172151.jpg');">
+                                <span>Modern</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="option-card">
+                        <h3><i class="bi bi-aspect-ratio"></i> Step 3: Orientation</h3>
+                        <div class="toggle-group">
+                            <button class="toggle-btn active" data-value="vertical">
+                                <i class="bi bi-pc-display"></i> Portrait
+                                <input type="radio" name="orientation" value="vertical" checked>
+                            </button>
+                            <button class="toggle-btn" data-value="horizontal">
+                                <i class="bi bi-pc-display-horizontal"></i> Landscape
+                                <input type="radio" name="orientation" value="horizontal">
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="option-card">
+                        <h3><i class="bi bi-rulers"></i> Step 4: Select Size</h3>
+                        <select id="size-select" class="modern-select">
+                            <option value="5x7" data-price="400">5 x 7 inches (₹400)</option>
+                            <option value="8x10" data-price="500" selected>8 x 10 inches (₹500)</option>
+                            <option value="9x11.5" data-price="600">9 x 11.5 inches (₹600)</option>
+                            <option value="10x12" data-price="700">10 x 12 inches (₹700)</option>
+                            <option value="12x16" data-price="900">12 x 16 inches (₹900)</option>
+                            <option value="16x20" data-price="1200">16 x 20 inches (₹1200)</option>
+                            <option value="12x18" data-price="1000">12 x 18 inches (₹1000)</option>
+                            <option value="15x19.5" data-price="1300">15 x 19.5 inches (₹1300)</option>
+                            <option value="18x24" data-price="1500">18 x 24 inches (₹1500)</option>
+                            <option value="20x28" data-price="1800">20 x 28 inches (₹1800)</option>
+                            <option value="24x36" data-price="2200">24 x 36 inches (₹2200)</option>
+                            <option value="2x4" data-price="2500">2 x 4 feet (₹2500)</option>
+                            <option value="3x6" data-price="3500">3 x 6 feet (₹3500)</option>
+                            <option value="4x8" data-price="4500">4 x 8 feet (₹4500)</option>
+                        </select>
+                    </div>
+
+                    <div class="actions-group">
+                        <button id="add-to-cart-btn" class="btn-premium btn-outline">
+                            <i class="bi bi-cart-plus"></i> Add to Cart
+                        </button>
+                        <button id="Buy-now-btn" class="btn-premium btn-primary">
+                            <i class="bi bi-bag-check"></i> Buy Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Reviews Section -->
+    <section class="reviews-section">
+        <div id="reviews-section"></div>
+    </section>
+
+    <!-- Footer Section -->
+    <footer>
+        <div class="footer">
+            <div class="footer-content">
+                <div class="footer-section-about">
+                    <img src="./assets/images/logo.png" alt="" srcset="">
+                    <p>At Vitthal Photo Frames, Preserving culture through art. Premium frames crafted with love and
+                        devotion in India. </p>
+                </div>
+                <div class="footer-section-links">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="#">Shop</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="contact.html">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section-links">
+                    <h3>Categories</h3>
+                    <ul>
+                        <li><a href="god.html">God Frames</a></li>
+                        <li><a href="warriors.html">Warrior Frames</a></li>
+                        <li><a href="custome_frame.html">Custom Frames</a></li>
+                        <li><a href="new.html">New Arrivals</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section-links" id="last-list">
+                    <h3 class="H3">Quick Links</h3>
+                    <ul>
+                        <li>
+                            <span class="material-symbols-outlined text-base">call</span>
+                            <a class="icons" href="tel:+91 9876543210">
+
+                                +91 9876543210
+                            </a>
+                        </li>
+                        <li>
+                            <span class="material-symbols-outlined text-base">mail</span>
+                            <a class="icons" href="mailto:vitthalphotos99@gmail.com">
+
+                                vitthalphotos99@gmail.com
+                            </a>
+                        </li>
+                        <li class="F-icon"><a href="#">
+                                <i class="bi bi-instagram"></i>
+                            </a>
+                            <a href="#">
+                                <i class="bi bi-facebook"></i>
+                            </a>
+                            <a href="#">
+                                <i class="bi bi-twitter"></i>
+                            </a>
+                        </li>
+
+                    </ul>
+                </div>
+
+
+            </div>
+
+            <div class="footer-bottom">
+                &copy; 2026 Vitthal Photos. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script src="reviews.js"></script>
+    <script src="custome_frame.js"></script>
+    <script src="app.js"></script>
+    <script src="search.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof initializePageReviews === 'function') {
+                initializePageReviews('custome_frame');
+            }
+        });
+    </script>
+</body>
+
+</html>
