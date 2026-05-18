@@ -189,7 +189,14 @@ router.put('/:id/status', protect, async (req, res) => {
     const { Order } = require('../lib/db');
     
     const updateData = {};
-    if (status !== undefined) updateData.status = status;
+    if (status !== undefined) {
+      updateData.status = status;
+      // Auto-set isDelivered when status is 'delivered'
+      if (status === 'delivered') {
+        updateData.isDelivered = true;
+        updateData.deliveredAt = new Date();
+      }
+    }
     if (trackingNumber !== undefined) updateData.trackingNumber = trackingNumber;
     if (trackingURL !== undefined) updateData.trackingURL = trackingURL;
     if (estimatedDelivery !== undefined) updateData.estimatedDelivery = new Date(estimatedDelivery);

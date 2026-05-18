@@ -91,8 +91,8 @@ router.post('/', protect, async (req, res) => {
       return res.status(400).json({ message: 'Return request already exists for this order' });
     }
 
-    // Check if order is delivered
-    if (order.status !== 'delivered') {
+    // Check if order is delivered (check both status and isDelivered fields)
+    if (order.status !== 'delivered' && !order.isDelivered) {
       return res.status(400).json({ message: 'Can only return delivered orders. Current status: ' + order.status });
     }
 
