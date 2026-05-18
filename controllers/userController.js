@@ -7,7 +7,7 @@ const { sendSMS } = require('../services/smsService');
 
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+  return jwt.sign({ id }, process.env.JWT_SECRET || 'vitthal_photo_frames_default_fallback_secret', {
     expiresIn: '30d',
   });
 };

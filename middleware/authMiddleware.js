@@ -8,7 +8,7 @@ const protect = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'vitthal_photo_frames_default_fallback_secret');
 
       const user = await User.findById(decoded.id);
 
