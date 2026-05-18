@@ -58,6 +58,9 @@ app.get('/robots.txt', (req, res) => {
   res.redirect('/api/seo/robots.txt');
 });
 
+// Serve local upload files statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Serve static frontend files (React build)
 app.use(express.static(path.join(__dirname, 'frontend', 'dist')));
 
