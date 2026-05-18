@@ -381,7 +381,7 @@ const Profile = () => {
               <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fa873b' }}>₹{selectedOrder.totalPrice.toLocaleString()}</span>
             </div>
 
-            {selectedOrder.status === 'delivered' && (
+            {selectedOrder.status?.toLowerCase() === 'delivered' && (
               <div style={{ marginTop: '20px', textAlign: 'center' }}>
                 <button 
                   onClick={() => setShowReturnModal(true)}
