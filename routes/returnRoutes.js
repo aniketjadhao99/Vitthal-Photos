@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const prisma = require('../lib/prisma');
 const { protect } = require('../middleware/authMiddleware');
 
 // @desc    Get user's return requests
@@ -8,31 +7,37 @@ const { protect } = require('../middleware/authMiddleware');
 // @access  Private
 router.get('/', protect, async (req, res) => {
   try {
+    const { Order, ReturnRequest } = require('../lib/db');
+    
     // Find all orders for this user
-    const orders = await prisma.order.findMany({
-      where: {
-        OR: [
-          { userId: req.user._id },
-          { email: req.user.email }
-        ]
-      }
-    });
-    const orderIds = orders.map(o => o.id || o._id.toString());
-
-    const returns = await prisma.returnRequest.findMany({
-      where: {
-        orderId: { in: orderIds }
-      },
-      orderBy: { createdAt: 'desc' }
+    const orders = await Order.find({
+      $or: [
+        { user: req.user._id },
+        { email: req.user.email }
+      ]
     });
     
-    // Populate order field manually for each return request
+    const orderIds = orders.map(o => o._id);
+
+    // Find return requests for these orders
+    const returns = await ReturnRequest.find({
+      orderId: { $in: orderIds }
+    }).sort({ createdAt: -1 });
+    
+    // Populate order data for each return request
     const mapped = returns.map(r => {
-      const order = orders.find(o => (o.id || o._id.toString()) === r.orderId.toString());
+      const order = orders.find(o => o._id.toString() === r.orderId.toString());
       return {
-        ...r.toObject ? r.toObject() : r,
-        _id: r.id || r._id ? (r.id || r._id).toString() : null,
-        order: order
+        _id: r._id.toString(),
+        orderId: r.orderId.toString(),
+        reason: r.reason,
+        description: r.description,
+        status: r.status,
+        refundAmount: r.refundAmount,
+        refundStatus: r.refundStatus,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+        order: order ? { ...order.toObject(), _id: order._id.toString() } : null
       };
     });
     
@@ -51,13 +56,30 @@ router.get('/admin/all', protect, async (req, res) => {
     if (!req.user.isAdmin) {
       return res.status(403).json({ message: 'Not authorized' });
     }
-    const returns = await prisma.returnRequest.findMany({
-      include: { order: true },
-      orderBy: { createdAt: 'desc' }
-    });
-    const mapped = returns.map(r => ({ ...r, _id: r.id }));
+    const { Order, ReturnRequest } = require('../lib/db');
+    
+    const returns = await ReturnRequest.find().sort({ createdAt: -1 });
+    
+    // Populate order data for each return
+    const mapped = await Promise.all(returns.map(async (r) => {
+      const order = await Order.findById(r.orderId);
+      return {
+        _id: r._id.toString(),
+        orderId: r.orderId.toString(),
+        reason: r.reason,
+        description: r.description,
+        status: r.status,
+        refundAmount: r.refundAmount,
+        refundStatus: r.refundStatus,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+        order: order ? { ...order.toObject(), _id: order._id.toString() } : null
+      };
+    }));
+    
     res.json(mapped);
   } catch (error) {
+    console.error('Error fetching returns:', error);
     res.status(500).json({ message: 'Error fetching returns', error: error.message });
   }
 });
@@ -95,7 +117,8 @@ router.post('/', protect, async (req, res) => {
     }
 
     // Check if return already exists
-    const existing = await prisma.returnRequest.findFirst({ where: { orderId } });
+    const { ReturnRequest } = require('../lib/db');
+    const existing = await ReturnRequest.findOne({ orderId });
     if (existing) {
       return res.status(400).json({ message: 'Return request already exists for this order' });
     }
@@ -111,17 +134,22 @@ router.post('/', protect, async (req, res) => {
       });
     }
 
-    const returnRequest = await prisma.returnRequest.create({
-      data: {
-        orderId,
-        reason,
-        description,
-        refundAmount: order.totalPrice
-      },
-      include: { order: true }
+    const returnRequest = await ReturnRequest.create({
+      orderId,
+      reason,
+      description,
+      refundAmount: order.totalPrice
     });
 
-    res.status(201).json({ ...returnRequest, _id: returnRequest.id });
+    res.status(201).json({ 
+      _id: returnRequest._id.toString(),
+      orderId: returnRequest.orderId.toString(),
+      reason: returnRequest.reason,
+      description: returnRequest.description,
+      status: returnRequest.status,
+      refundAmount: returnRequest.refundAmount,
+      createdAt: returnRequest.createdAt
+    });
   } catch (error) {
     console.error('Return request creation error:', error);
     res.status(500).json({ message: 'Error creating return request', error: error.message });
@@ -137,28 +165,45 @@ router.put('/:id', protect, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
+    const { Order, ReturnRequest } = require('../lib/db');
     const { status, refundAmount, refundStatus } = req.body;
 
-    const returnRequest = await prisma.returnRequest.update({
-      where: { id: req.params.id },
-      data: {
-        status: status || undefined,
-        refundAmount: refundAmount ? Number(refundAmount) : undefined,
-        refundStatus: refundStatus || undefined
-      },
-      include: { order: true }
-    });
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (refundAmount) updateData.refundAmount = Number(refundAmount);
+    if (refundStatus) updateData.refundStatus = refundStatus;
+
+    const returnRequest = await ReturnRequest.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+
+    if (!returnRequest) {
+      return res.status(404).json({ message: 'Return request not found' });
+    }
 
     // If approved, update order to 'returned' and mark as refunded
     if (status === 'approved') {
-      await prisma.order.update({
-        where: { id: returnRequest.orderId },
-        data: { status: 'returned', isPaid: false }
-      });
+      await Order.findByIdAndUpdate(
+        returnRequest.orderId,
+        { status: 'returned', isPaid: false }
+      );
     }
 
-    res.json({ ...returnRequest, _id: returnRequest.id });
+    res.json({
+      _id: returnRequest._id.toString(),
+      orderId: returnRequest.orderId.toString(),
+      reason: returnRequest.reason,
+      description: returnRequest.description,
+      status: returnRequest.status,
+      refundAmount: returnRequest.refundAmount,
+      refundStatus: returnRequest.refundStatus,
+      createdAt: returnRequest.createdAt,
+      updatedAt: returnRequest.updatedAt
+    });
   } catch (error) {
+    console.error('Error updating return request:', error);
     res.status(500).json({ message: 'Error updating return request', error: error.message });
   }
 });
@@ -168,12 +213,15 @@ router.put('/:id', protect, async (req, res) => {
 // @access  Private
 router.delete('/:id', protect, async (req, res) => {
   try {
-    const returnRequest = await prisma.returnRequest.findUnique({ where: { id: req.params.id } });
+    const { Order, ReturnRequest } = require('../lib/db');
+    
+    const returnRequest = await ReturnRequest.findById(req.params.id);
     if (!returnRequest) {
       return res.status(404).json({ message: 'Return request not found' });
     }
-    const order = await prisma.order.findUnique({ where: { id: returnRequest.orderId.toString() } });
-    if (!order || order.userId !== req.user._id) {
+
+    const order = await Order.findById(returnRequest.orderId);
+    if (!order || (order.user?.toString() !== req.user._id?.toString() && order.email !== req.user.email)) {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
@@ -181,9 +229,10 @@ router.delete('/:id', protect, async (req, res) => {
       return res.status(400).json({ message: 'Can only cancel pending returns' });
     }
 
-    await prisma.returnRequest.delete({ where: { id: req.params.id } });
+    await ReturnRequest.findByIdAndDelete(req.params.id);
     res.json({ message: 'Return request cancelled' });
   } catch (error) {
+    console.error('Error cancelling return:', error);
     res.status(500).json({ message: 'Error cancelling return', error: error.message });
   }
 });
