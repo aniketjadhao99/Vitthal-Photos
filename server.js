@@ -32,6 +32,9 @@ const {
 
 const app = express();
 
+// Health check endpoint (always return 200) - helps load balancers and uptime monitors
+app.get('/healthz', (req, res) => res.sendStatus(200));
+
 // Initialize database connection
 (async () => {
   const dbConnected = await connectDB();
