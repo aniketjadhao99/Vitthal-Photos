@@ -75,10 +75,19 @@ router.post('/', protect, async (req, res) => {
     }
 
     // Verify order belongs to user (by user ID or email)
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(orderId).lean();
     if (!order) {
+      console.log('Order not found for ID:', orderId);
       return res.status(404).json({ message: 'Order not found' });
     }
+
+    console.log('Order details:', {
+      id: order._id,
+      status: order.status,
+      isDelivered: order.isDelivered,
+      userEmail: order.email,
+      userId: order.user?.toString()
+    });
 
     // Check if order belongs to user
     if (order.user?.toString() !== req.user._id?.toString() && order.email !== req.user.email) {
@@ -92,8 +101,14 @@ router.post('/', protect, async (req, res) => {
     }
 
     // Check if order is delivered (check both status and isDelivered fields)
-    if (order.status !== 'delivered' && !order.isDelivered) {
-      return res.status(400).json({ message: 'Can only return delivered orders. Current status: ' + order.status });
+    const isDelivered = order.status === 'delivered' || order.isDelivered === true;
+    
+    if (!isDelivered) {
+      return res.status(400).json({ 
+        message: 'Can only return delivered orders.', 
+        currentStatus: order.status,
+        isDelivered: order.isDelivered
+      });
     }
 
     const returnRequest = await prisma.returnRequest.create({
@@ -108,6 +123,7 @@ router.post('/', protect, async (req, res) => {
 
     res.status(201).json({ ...returnRequest, _id: returnRequest.id });
   } catch (error) {
+    console.error('Return request creation error:', error);
     res.status(500).json({ message: 'Error creating return request', error: error.message });
   }
 });
