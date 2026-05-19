@@ -8,7 +8,14 @@ const protect = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'vitthal_photo_frames_default_fallback_secret');
+      // Verify JWT_SECRET is set in environment
+      const secret = process.env.JWT_SECRET;
+      if (!secret) {
+        console.error('CRITICAL: JWT_SECRET not set in environment variables');
+        return res.status(500).json({ message: 'Server configuration error' });
+      }
+
+      const decoded = jwt.verify(token, secret);
 
       const user = await User.findById(decoded.id);
 

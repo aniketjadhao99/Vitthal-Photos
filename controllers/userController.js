@@ -1,13 +1,18 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const prisma = require('../lib/prisma');
-const UserMongo = require('../models/User'); // MongoDB Fallback
+const UserMongo = require('../models/User');
 const { sendEmail } = require('../services/emailService');
 const { sendSMS } = require('../services/smsService');
+const validators = require('../utils/validators');
 
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'vitthal_photo_frames_default_fallback_secret', {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET is not set in environment variables');
+  }
+  return jwt.sign({ id }, secret, {
     expiresIn: '30d',
   });
 };
@@ -22,32 +27,49 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    // Validate input format
+    if (!validators.validateName(name)) {
+      return res.status(400).json({ message: 'Invalid name format (2-100 characters, letters only)' });
+    }
+
+    if (!validators.validateEmail(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    if (!validators.validatePassword(password)) {
+      return res.status(400).json({ 
+        message: 'Password must be at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&)' 
+      });
     }
 
     let userExists;
     try {
-      userExists = await prisma.user.findUnique({ where: { email } });
+      userExists = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     } catch (err) {
-      userExists = await UserMongo.findOne({ email });
+      userExists = await UserMongo.findOne({ email: email.toLowerCase() });
     }
 
     if (userExists) {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     let user;
     try {
       user = await prisma.user.create({
-        data: { name, email, password: hashedPassword },
+        data: { 
+          name: name.trim(), 
+          email: email.toLowerCase(), 
+          password: hashedPassword 
+        },
       });
     } catch (prismaError) {
       console.warn('Prisma registration failed, using MongoDB...', prismaError.message);
       user = await UserMongo.create({
-        name, email, password: hashedPassword
+        name: name.trim(), 
+        email: email.toLowerCase(), 
+        password: hashedPassword
       });
       user.id = user._id.toString();
     }
@@ -67,8 +89,8 @@ const registerUser = async (req, res) => {
       res.status(400).json({ message: 'Invalid user data' });
     }
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Registration error:', error.message);
+    res.status(500).json({ message: 'Registration failed. Please try again.' });
   }
 };
 
@@ -418,4 +440,4 @@ module.exports = {
   googleAuth,
   requestOTP,
   verifyOTPLogin
-};
+};

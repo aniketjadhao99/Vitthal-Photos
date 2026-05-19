@@ -18,6 +18,17 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 const seoRoutes = require('./routes/seoRoutes');
 const newsletterRoutes = require('./routes/newsletterRoutes');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
+
+// Security middleware
+const { 
+  securityHeaders, 
+  authLimiter, 
+  apiLimiter, 
+  paymentLimiter, 
+  sanitizeInputs, 
+  secureHeaders 
+} = require('./middleware/securityMiddleware');
 
 const app = express();
 
@@ -29,16 +40,35 @@ const app = express();
   }
 })();
 
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// Apply security headers first
+app.use(securityHeaders);
+app.use(secureHeaders);
 
-// API routes (must be before the SPA catch-all)
+// CORS - Restrictive configuration
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['https://vitthalphotos.com', 'https://www.vitthalphotos.com'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// Body parser with size limits
+app.use(express.json({ limit: '10mb' })); // Reduced from 50mb
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(cookieParser());
+
+// Apply sanitization to all requests
+app.use(sanitizeInputs);
+
+// Apply general rate limiting
+app.use('/api/', apiLimiter);
+
+// API routes
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/payment', paymentRoutes);
+app.use('/api/payment', paymentLimiter, paymentRoutes); // Strict rate limit on payments
 app.use('/api/upload', uploadRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api/users', authLimiter, userRoutes); // Strict rate limit on auth
 app.use('/api/settings', settingsRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/wishlist', wishlistRoutes);
