@@ -225,6 +225,41 @@ router.put('/:id/status', protect, async (req, res) => {
   }
 });
 
+// @desc    Fix existing delivered orders (Admin only - migration endpoint)
+// @route   PUT /api/orders/fix/delivered
+// @access  Private - Admin only
+router.put('/fix/delivered', protect, async (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized as an admin' });
+    }
+    const { Order } = require('../lib/db');
+    
+    // Fix all orders with status='Delivered' (any case) but isDelivered=false
+    const result = await Order.updateMany(
+      { 
+        status: { $regex: 'delivered', $options: 'i' },
+        isDelivered: false
+      },
+      { 
+        $set: { 
+          isDelivered: true,
+          deliveredAt: new Date()
+        }
+      }
+    );
+    
+    res.json({ 
+      message: 'Fixed delivered orders',
+      matched: result.matchedCount,
+      modified: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Fix delivered orders error:', error);
+    res.status(500).json({ message: 'Server Error: ' + error.message });
+  }
+});
+
 // @desc    Delete order (Admin only)
 // @route   DELETE /api/orders/:id
 // @access  Private - Admin only
