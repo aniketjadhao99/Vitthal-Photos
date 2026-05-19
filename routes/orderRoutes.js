@@ -191,8 +191,8 @@ router.put('/:id/status', protect, async (req, res) => {
     const updateData = {};
     if (status !== undefined) {
       updateData.status = status;
-      // Auto-set isDelivered when status is 'delivered'
-      if (status === 'delivered') {
+      // Auto-set isDelivered when status is 'delivered' (case-insensitive)
+      if (status.toLowerCase() === 'delivered') {
         updateData.isDelivered = true;
         updateData.deliveredAt = new Date();
       }

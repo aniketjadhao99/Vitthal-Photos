@@ -100,8 +100,8 @@ router.post('/', protect, async (req, res) => {
       return res.status(400).json({ message: 'Return request already exists for this order' });
     }
 
-    // Check if order is delivered (check both status and isDelivered fields)
-    const isDelivered = order.status === 'delivered' || order.isDelivered === true;
+    // Check if order is delivered (check both status and isDelivered fields, case-insensitive)
+    const isDelivered = order.status?.toLowerCase() === 'delivered' || order.isDelivered === true;
     
     if (!isDelivered) {
       return res.status(400).json({ 
