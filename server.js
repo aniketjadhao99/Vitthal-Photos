@@ -32,16 +32,41 @@ const {
 
 const app = express();
 
+// Global variable to track DB connection status
+let dbConnected = false;
+
 // Health check endpoint (always return 200) - helps load balancers and uptime monitors
 app.get('/healthz', (req, res) => res.sendStatus(200));
 
-// Initialize database connection
+// Initialize database connection (non-blocking - server continues even if DB fails)
 (async () => {
-  const dbConnected = await connectDB();
-  if (dbConnected) {
-    console.log('Database ready for operations');
+  console.log('🚀 Starting server initialization...');
+  try {
+    const connected = await connectDB();
+    dbConnected = connected;
+    if (connected) {
+      console.log('✅ Database ready for operations');
+    } else {
+      console.warn('⚠️  Server running in degraded mode - database unavailable');
+      console.warn('   API endpoints will return 503 until database is fixed');
+    }
+  } catch (error) {
+    console.error('❌ Unexpected error during DB initialization:', error);
+    console.warn('⚠️  Server running in degraded mode');
   }
 })();
+
+// Middleware to check DB connectivity for API routes
+const dbRequiredMiddleware = (req, res, next) => {
+  if (!dbConnected && !req.path.startsWith('/healthz')) {
+    return res.status(503).json({ 
+      message: 'Service temporarily unavailable',
+      reason: 'Database connection failed',
+      help: 'Please check your MongoDB credentials in .env file'
+    });
+  }
+  next();
+};
 
 // Apply security headers first
 app.use(securityHeaders);
@@ -65,6 +90,9 @@ app.use(sanitizeInputs);
 
 // Apply general rate limiting
 app.use('/api/', apiLimiter);
+
+// Check DB connectivity for API routes
+app.use('/api/', dbRequiredMiddleware);
 
 // API routes
 app.use('/api/products', productRoutes);
