@@ -1,40 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import Reviews from '../components/Reviews';
 import '../styles/CustomFrame.css';
 
 const CustomFrame = () => {
+  // Photo & Crop State
   const [photo, setPhoto] = useState(null);
+  const [photoName, setPhotoName] = useState('');
+  const [cropMode, setCropMode] = useState(false);
+  const [cropZoom, setCropZoom] = useState(1);
+  const [cropRotation, setCropRotation] = useState(0);
+  
+  // Frame & Design State
   const [frameStyle, setFrameStyle] = useState('modern');
   const [orientation, setOrientation] = useState('vertical');
+  const [frameColor, setFrameColor] = useState('black');
+  const [material, setMaterial] = useState('wood');
+  const [glassFinish, setGlassFinish] = useState('regular');
+  const [mattingStyle, setMattingStyle] = useState('none');
+  const [mattingWidth, setMattingWidth] = useState(1);
+  const [mattingColor, setMattingColor] = useState('white');
+  
+  // Size & Price State
   const [sizeAndPrice, setSizeAndPrice] = useState({ size: '8x10', price: 500 });
-  const [photoName, setPhotoName] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [totalPrice, setTotalPrice] = useState(500);
+  
+  // Text & Personalization State
+  const [addText, setAddText] = useState(false);
+  const [textContent, setTextContent] = useState('');
+  const [textPosition, setTextPosition] = useState('bottom');
+  const [textSize, setTextSize] = useState('medium');
+  
+  // UI State
+  const [showComparison, setShowComparison] = useState(false);
+  const [savedDesigns, setSavedDesigns] = useState([]);
+  const [designName, setDesignName] = useState('');
+  const [view3D, setView3D] = useState(false);
+  
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const fileInputRef = useRef(null);
 
+  // Data
   const frames = [
-    {
-      id: 'modern',
-      name: 'Modern',
-      image: 'https://img.freepik.com/free-vector/empty-golden-frame-vector_53876-172151.jpg',
-      description: 'Clean & Minimalist',
-      borderStyle: '10px solid #222'
-    },
-    {
-      id: 'ornate',
-      name: 'Ornate',
-      image: 'https://img.freepik.com/free-vector/baroque-stucco-gold-frame-vector-floral-design_53876-170725.jpg',
-      description: 'Elegant & Decorative',
-      borderStyle: '20px solid transparent'
-    },
-    {
-      id: 'vintage',
-      name: 'Vintage',
-      image: 'https://img.freepik.com/free-vector/realistic-gold-frame_1017-6401.jpg',
-      description: 'Classic & Timeless',
-      borderStyle: '15px solid #8a6327'
-    }
+    { id: 'modern', name: 'Modern', image: 'https://img.freepik.com/free-vector/empty-golden-frame-vector_53876-172151.jpg', description: 'Clean & Minimalist' },
+    { id: 'ornate', name: 'Ornate', image: 'https://img.freepik.com/free-vector/baroque-stucco-gold-frame-vector-floral-design_53876-170725.jpg', description: 'Elegant & Decorative' },
+    { id: 'vintage', name: 'Vintage', image: 'https://img.freepik.com/free-vector/realistic-gold-frame_1017-6401.jpg', description: 'Classic & Timeless' }
   ];
 
   const sizes = [
@@ -51,6 +64,77 @@ const CustomFrame = () => {
     { value: '24x36', label: '24 x 36 inches', price: 2200 }
   ];
 
+  const materials = [
+    { id: 'wood', name: 'Wood', price: 0, icon: 'bi-tree-fill' },
+    { id: 'metal', name: 'Aluminum', price: 200, icon: 'bi-hammer' },
+    { id: 'plastic', name: 'Plastic', price: -100, icon: 'bi-boxes' }
+  ];
+
+  const glassOptions = [
+    { id: 'regular', name: 'Regular Glass', price: 0 },
+    { id: 'matte', name: 'Matte Glass', price: 150 },
+    { id: 'gloss', name: 'Gloss Glass', price: 150 }
+  ];
+
+  const mattingOptions = [
+    { id: 'none', name: 'No Matting', width: 0 },
+    { id: 'single', name: 'Single Mat', width: 1.5 },
+    { id: 'double', name: 'Double Mat', width: 2.5 }
+  ];
+
+  const mattingColors = [
+    { id: 'white', name: 'White', color: '#ffffff' },
+    { id: 'cream', name: 'Cream', color: '#fffdd0' },
+    { id: 'black', name: 'Black', color: '#000000' },
+    { id: 'gray', name: 'Gray', color: '#808080' },
+    { id: 'beige', name: 'Beige', color: '#f5f5dc' }
+  ];
+
+  // Load saved designs on mount
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('vitthal_saved_designs')) || [];
+    setSavedDesigns(saved);
+  }, []);
+
+  // Calculate price with all add-ons and bulk discount
+  useEffect(() => {
+    let basePrice = sizeAndPrice.price;
+    let addOnPrice = 0;
+    
+    // Material price
+    const materialInfo = materials.find(m => m.id === material);
+    if (materialInfo) addOnPrice += materialInfo.price;
+    
+    // Glass price
+    const glassInfo = glassOptions.find(g => g.id === glassFinish);
+    if (glassInfo) addOnPrice += glassInfo.price;
+    
+    // Matting price (₹100 per inch of matting)
+    if (mattingStyle !== 'none') {
+      const mattingInfo = mattingOptions.find(m => m.id === mattingStyle);
+      addOnPrice += (mattingInfo.width * 100);
+    }
+    
+    // Text price
+    let textPrice = 0;
+    if (addText && textContent) {
+      textPrice = 50;
+    }
+    
+    let unitPrice = basePrice + addOnPrice + textPrice;
+    
+    // Bulk discount
+    let discountPercent = 0;
+    if (quantity >= 5) discountPercent = 5;
+    if (quantity >= 10) discountPercent = 10;
+    if (quantity >= 20) discountPercent = 15;
+    
+    const discountAmount = (unitPrice * discountPercent) / 100;
+    const finalUnitPrice = unitPrice - discountAmount;
+    
+    setTotalPrice(Math.round(finalUnitPrice * quantity));
+  }, [sizeAndPrice.price, material, glassFinish, mattingStyle, mattingWidth, addText, textContent, quantity]);
+
   const handlePhotoUpload = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -62,10 +146,17 @@ const CustomFrame = () => {
       const reader = new FileReader();
       reader.onload = (loadEvent) => {
         setPhoto(loadEvent.target.result);
-        addToast('Photo uploaded successfully!', 'success');
+        setCropMode(true);
+        addToast('Photo uploaded! Now crop it', 'success');
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleCropConfirm = () => {
+    if (!photo) return;
+    setCropMode(false);
+    addToast('Photo cropped successfully!', 'success');
   };
 
   const handleSizeChange = (value) => {
@@ -73,58 +164,89 @@ const CustomFrame = () => {
     setSizeAndPrice({ size: value, price: selected.price });
   };
 
-  const getFrameStyle = () => {
-    const frame = frames.find(f => f.id === frameStyle);
-    if (frameStyle === 'ornate') return '20px solid transparent';
-    if (frameStyle === 'vintage') return '15px solid #8a6327';
-    return '10px solid #222';
+  const saveDesign = () => {
+    if (!photo || !designName.trim()) {
+      addToast('Please enter a design name', 'error');
+      return;
+    }
+    
+    const newDesign = {
+      id: Date.now(),
+      name: designName,
+      photo,
+      frameStyle,
+      material,
+      glassFinish,
+      mattingStyle,
+      textContent,
+      size: sizeAndPrice.size,
+      orientation,
+      savedAt: new Date().toLocaleDateString()
+    };
+    
+    const updated = [...savedDesigns, newDesign];
+    setSavedDesigns(updated);
+    localStorage.setItem('vitthal_saved_designs', JSON.stringify(updated));
+    setDesignName('');
+    addToast('✓ Design saved!', 'success');
   };
 
-  const getFrameImage = () => {
-    if (frameStyle === 'ornate') return 'url("https://img.freepik.com/free-vector/baroque-stucco-gold-frame-vector-floral-design_53876-170725.jpg") 30 stretch';
-    if (frameStyle === 'vintage') return 'url("https://img.freepik.com/free-vector/realistic-gold-frame_1017-6401.jpg") 20 stretch';
-    return 'none';
+  const loadDesign = (design) => {
+    setPhoto(design.photo);
+    setFrameStyle(design.frameStyle);
+    setMaterial(design.material);
+    setGlassFinish(design.glassFinish);
+    setMattingStyle(design.mattingStyle);
+    setTextContent(design.textContent);
+    setSizeAndPrice(sizes.find(s => s.value === design.size));
+    setOrientation(design.orientation);
+    addToast('✓ Design loaded!', 'success');
+  };
+
+  const deleteDesign = (id) => {
+    const updated = savedDesigns.filter(d => d.id !== id);
+    setSavedDesigns(updated);
+    localStorage.setItem('vitthal_saved_designs', JSON.stringify(updated));
+    addToast('Design deleted', 'info');
   };
 
   const addToCart = () => {
     if (!photo) {
-      addToast('Please upload a photo first!', 'error');
+      addToast('Please upload and crop photo first!', 'error');
       return;
     }
+    
     const cart = JSON.parse(localStorage.getItem('vitthal_cart')) || [];
-    const existingItemIndex = cart.findIndex(i => 
-      i.isCustom && 
-      i.name === `Custom ${frameStyle.charAt(0).toUpperCase() + frameStyle.slice(1)} Frame` && 
-      i.size === sizeAndPrice.size && 
-      i.orientation === orientation &&
-      i.image === photo
-    );
-
-    if (existingItemIndex > -1) {
-      cart[existingItemIndex].quantity += 1;
-    } else {
-      const item = {
-        _id: 'custom-' + Date.now(),
-        name: `Custom ${frameStyle.charAt(0).toUpperCase() + frameStyle.slice(1)} Frame`,
-        price: sizeAndPrice.price,
-        image: photo,
-        size: sizeAndPrice.size,
-        quantity: 1,
-        isCustom: true,
-        orientation
-      };
-      cart.push(item);
-    }
+    const item = {
+      _id: 'custom-' + Date.now(),
+      name: `Custom ${frameStyle} Frame`,
+      price: Math.round(totalPrice / quantity),
+      image: photo,
+      size: sizeAndPrice.size,
+      quantity,
+      isCustom: true,
+      orientation,
+      material,
+      glassFinish,
+      mattingStyle,
+      textContent,
+      customizations: {
+        frameStyle,
+        material,
+        glassFinish,
+        mattingStyle,
+        textContent,
+        addText
+      }
+    };
+    
+    cart.push(item);
     localStorage.setItem('vitthal_cart', JSON.stringify(cart));
     window.dispatchEvent(new Event('cartUpdated'));
-    addToast('✓ Custom frame added to cart!', 'success');
+    addToast(`✓ Added ${quantity} frame(s) to cart!`, 'success');
   };
 
   const buyNow = () => {
-    if (!photo) {
-      addToast('Please upload a photo first!', 'error');
-      return;
-    }
     addToCart();
     navigate('/checkout');
   };
@@ -141,135 +263,263 @@ const CustomFrame = () => {
 
           <div className="custom-frame-header">
             <h1>Design Your Perfect Frame</h1>
-            <p>Personalize your memories with our easy-to-use customization tool</p>
-          </div>
-
-          <div className="progress-indicator">
-            <div className={`progress-step ${photo ? 'completed' : 'active'}`}>
-              <div className="step-number">1</div>
-              <div className="step-label">Upload Photo</div>
-            </div>
-            <div className="progress-line"></div>
-            <div className={`progress-step ${frameStyle ? 'active' : ''}`}>
-              <div className="step-number">2</div>
-              <div className="step-label">Select Frame</div>
-            </div>
-            <div className="progress-line"></div>
-            <div className={`progress-step ${sizeAndPrice.size ? 'active' : ''}`}>
-              <div className="step-number">3</div>
-              <div className="step-label">Choose Size</div>
-            </div>
-            <div className="progress-line"></div>
-            <div className="progress-step active">
-              <div className="step-number">4</div>
-              <div className="step-label">Checkout</div>
+            <p>Professional frame customizer with all features</p>
+            <div className="view-toggle">
+              <button className={`toggle-view ${!view3D ? 'active' : ''}`} onClick={() => setView3D(false)}>
+                <i className="bi bi-eye"></i> 2D Preview
+              </button>
+              <button className={`toggle-view ${view3D ? 'active' : ''}`} onClick={() => setView3D(true)}>
+                <i className="bi bi-box"></i> 3D View
+              </button>
+              <button className="toggle-view" onClick={() => setShowComparison(!showComparison)}>
+                <i className="bi bi-diagram-3"></i> Compare
+              </button>
             </div>
           </div>
 
           <div className="custom-frame-main">
-            {/* Preview Section */}
+            {/* Preview Container */}
             <div className="preview-container">
               <div className="preview-card">
                 <div className="preview-header">
                   <h3>Live Preview</h3>
-                  <span className="size-info">{sizeAndPrice.size} inches</span>
+                  <span className="size-info">{sizeAndPrice.size} inches • {material}</span>
                 </div>
 
-                <div className="frame-visualizer" style={{ 
-                  width: orientation === 'vertical' ? '280px' : '380px', 
-                  height: orientation === 'vertical' ? '380px' : '280px',
-                  border: getFrameStyle(),
-                  borderImage: getFrameImage(),
-                }}>
-                  {!photo ? (
-                    <div className="empty-preview">
-                      <i className="bi bi-image"></i>
-                      <p>Upload photo to see preview</p>
+                {view3D ? (
+                  <div className="frame-3d-view">
+                    <div className="frame-3d" style={{
+                      transform: 'rotateX(15deg) rotateY(-10deg)',
+                      boxShadow: '0 30px 60px rgba(0,0,0,0.3)'
+                    }}>
+                      {photo && <img src={photo} alt="3D Preview" />}
                     </div>
-                  ) : (
-                    <img src={photo} alt="Preview" />
+                    <p className="note">3D Preview</p>
+                  </div>
+                ) : (
+                  <div className="frame-visualizer" style={{ 
+                    width: orientation === 'vertical' ? '260px' : '360px', 
+                    height: orientation === 'vertical' ? '360px' : '260px',
+                  }}>
+                    {mattingStyle !== 'none' && (
+                      <div className="matting" style={{ 
+                        borderWidth: `${mattingWidth * 20}px`,
+                        borderColor: mattingColors.find(c => c.id === mattingColor)?.color
+                      }}>
+                        {photo ? <img src={photo} alt="Preview" /> : <div className="empty-preview"><i className="bi bi-image"></i></div>}
+                      </div>
+                    )}
+                    {!mattingStyle && photo && <img src={photo} alt="Preview" />}
+                    {!mattingStyle && !photo && <div className="empty-preview"><i className="bi bi-image"></i></div>}
+                  </div>
+                )}
+
+                <div className="customization-summary">
+                  <div className="summary-item">
+                    <span>Material:</span>
+                    <strong>{materials.find(m => m.id === material)?.name}</strong>
+                  </div>
+                  <div className="summary-item">
+                    <span>Glass:</span>
+                    <strong>{glassOptions.find(g => g.id === glassFinish)?.name}</strong>
+                  </div>
+                  {mattingStyle !== 'none' && (
+                    <div className="summary-item">
+                      <span>Matting:</span>
+                      <strong>{mattingOptions.find(m => m.id === mattingStyle)?.name}</strong>
+                    </div>
                   )}
                 </div>
 
                 <div className="price-display">
-                  <span className="price-label">Total Price</span>
-                  <span className="price-amount">₹{sizeAndPrice.price}</span>
+                  <span className="price-label">Total Price ({quantity}x)</span>
+                  <span className="price-amount">₹{totalPrice}</span>
+                  {quantity >= 5 && <span className="discount-badge">SAVE UP TO 15%</span>}
                 </div>
               </div>
             </div>
 
             {/* Customization Panel */}
             <div className="customization-panel">
-              {/* Step 1: Upload Photo */}
+              {/* Photo Upload & Crop */}
               <div className="custom-step">
                 <div className="step-header">
                   <i className="bi bi-cloud-upload"></i>
-                  <h3>Step 1: Upload Your Photo</h3>
+                  <h3>Step 1: Upload & Crop Photo</h3>
                   {photo && <span className="badge-success">✓ Done</span>}
                 </div>
                 <div className="step-content">
-                  <div className="file-upload-box">
-                    <div className="file-upload-inner">
-                      <i className="bi bi-camera-fill"></i>
-                      <p className="upload-main">Click or drag & drop</p>
-                      <p className="upload-sub">JPG, PNG, WEBP (Max 5MB)</p>
+                  {!cropMode ? (
+                    <div className="file-upload-box">
+                      <div className="file-upload-inner">
+                        <i className="bi bi-camera-fill"></i>
+                        <p className="upload-main">Click or drag & drop</p>
+                        <p className="upload-sub">JPG, PNG, WEBP (Max 5MB)</p>
+                      </div>
+                      <input 
+                        ref={fileInputRef}
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handlePhotoUpload}
+                        className="file-input"
+                      />
                     </div>
-                    <input 
-                      type="file" 
-                      id="photo-upload" 
-                      accept="image/*" 
-                      onChange={handlePhotoUpload}
-                      className="file-input"
-                    />
-                  </div>
-                  {photoName && (
-                    <div className="uploaded-info">
-                      <i className="bi bi-check-circle-fill"></i>
-                      <span>{photoName}</span>
+                  ) : (
+                    <div className="crop-editor">
+                      <div className="crop-preview">
+                        <img src={photo} alt="Crop Preview" style={{
+                          transform: `scale(${cropZoom}) rotate(${cropRotation}deg)`
+                        }} />
+                      </div>
+                      <div className="crop-controls">
+                        <div className="control-group">
+                          <label>Zoom</label>
+                          <input 
+                            type="range" 
+                            min="1" 
+                            max="3" 
+                            step="0.1" 
+                            value={cropZoom}
+                            onChange={(e) => setCropZoom(parseFloat(e.target.value))}
+                          />
+                          <span>{Math.round(cropZoom * 100)}%</span>
+                        </div>
+                        <div className="control-group">
+                          <label>Rotate</label>
+                          <div className="rotate-buttons">
+                            <button onClick={() => setCropRotation(cropRotation - 90)}>↺ -90°</button>
+                            <button onClick={() => setCropRotation(0)}>↻ Reset</button>
+                            <button onClick={() => setCropRotation(cropRotation + 90)}>↻ +90°</button>
+                          </div>
+                        </div>
+                        <button className="btn-crop-done" onClick={handleCropConfirm}>
+                          <i className="bi bi-check"></i> Done Cropping
+                        </button>
+                      </div>
                     </div>
                   )}
+                  {photoName && <div className="uploaded-info"><i className="bi bi-check-circle-fill"></i><span>{photoName}</span></div>}
                 </div>
               </div>
 
-              {/* Step 2: Frame Selection */}
+              {/* Frame & Design Options */}
               <div className="custom-step">
                 <div className="step-header">
                   <i className="bi bi-palette-fill"></i>
-                  <h3>Step 2: Choose Frame Style</h3>
+                  <h3>Step 2: Frame Design</h3>
                 </div>
                 <div className="step-content">
-                  <div className="frames-grid">
-                    {frames.map(frame => (
-                      <div 
-                        key={frame.id}
-                        className={`frame-option ${frameStyle === frame.id ? 'selected' : ''}`}
-                        onClick={() => setFrameStyle(frame.id)}
-                      >
-                        <div className="frame-preview-thumb" style={{ backgroundImage: `url(${frame.image})` }}>
-                          {frameStyle === frame.id && (
-                            <div className="selection-badge">
-                              <i className="bi bi-check2"></i>
-                            </div>
-                          )}
-                        </div>
-                        <div className="frame-info">
+                  <div className="option-group">
+                    <label>Frame Style</label>
+                    <div className="frames-grid">
+                      {frames.map(frame => (
+                        <div 
+                          key={frame.id}
+                          className={`frame-option ${frameStyle === frame.id ? 'selected' : ''}`}
+                          onClick={() => setFrameStyle(frame.id)}
+                        >
+                          <div className="frame-preview-thumb" style={{ backgroundImage: `url(${frame.image})` }}>
+                            {frameStyle === frame.id && <div className="selection-badge"><i className="bi bi-check2"></i></div>}
+                          </div>
                           <p className="frame-name">{frame.name}</p>
-                          <p className="frame-desc">{frame.description}</p>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="option-group">
+                    <label>Material</label>
+                    <div className="material-grid">
+                      {materials.map(mat => (
+                        <button
+                          key={mat.id}
+                          className={`material-btn ${material === mat.id ? 'selected' : ''}`}
+                          onClick={() => setMaterial(mat.id)}
+                        >
+                          <i className={`bi ${mat.icon}`}></i>
+                          <span>{mat.name}</span>
+                          {mat.price !== 0 && <small>{mat.price > 0 ? '+' : ''}₹{mat.price}</small>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="option-group">
+                    <label>Glass Finish</label>
+                    <div className="glass-grid">
+                      {glassOptions.map(glass => (
+                        <button
+                          key={glass.id}
+                          className={`glass-btn ${glassFinish === glass.id ? 'selected' : ''}`}
+                          onClick={() => setGlassFinish(glass.id)}
+                        >
+                          <span>{glass.name}</span>
+                          <small>+₹{glass.price}</small>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Step 3: Orientation & Size */}
+              {/* Matting & Size */}
               <div className="custom-step">
                 <div className="step-header">
-                  <i className="bi bi-aspect-ratio-fill"></i>
-                  <h3>Step 3: Orientation & Size</h3>
+                  <i className="bi bi-border"></i>
+                  <h3>Step 3: Matting & Size</h3>
                 </div>
                 <div className="step-content">
-                  <div className="orientation-selector">
+                  <div className="option-group">
+                    <label>Matting Style</label>
+                    <div className="matting-grid">
+                      {mattingOptions.map(mat => (
+                        <button
+                          key={mat.id}
+                          className={`matting-btn ${mattingStyle === mat.id ? 'selected' : ''}`}
+                          onClick={() => setMattingStyle(mat.id)}
+                        >
+                          {mat.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {mattingStyle !== 'none' && (
+                    <div className="option-group">
+                      <label>Matting Color</label>
+                      <div className="color-grid">
+                        {mattingColors.map(color => (
+                          <button
+                            key={color.id}
+                            className={`color-btn ${mattingColor === color.id ? 'selected' : ''}`}
+                            onClick={() => setMattingColor(color.id)}
+                            style={{ backgroundColor: color.color }}
+                            title={color.name}
+                          >
+                            {mattingColor === color.id && <i className="bi bi-check"></i>}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="option-group">
+                    <label>Size</label>
+                    <div className="size-grid">
+                      {sizes.map(size => (
+                        <button
+                          key={size.value}
+                          className={`size-option ${sizeAndPrice.size === size.value ? 'selected' : ''}`}
+                          onClick={() => handleSizeChange(size.value)}
+                        >
+                          <span className="size-label">{size.label}</span>
+                          <span className="size-price">₹{size.price}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="option-group">
                     <label>Orientation</label>
                     <div className="toggle-group">
                       <button 
@@ -286,22 +536,143 @@ const CustomFrame = () => {
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
 
-                  <div className="size-selector">
-                    <label htmlFor="size-select">Size</label>
-                    <div className="size-grid">
-                      {sizes.map(size => (
-                        <button
-                          key={size.value}
-                          className={`size-option ${sizeAndPrice.size === size.value ? 'selected' : ''}`}
-                          onClick={() => handleSizeChange(size.value)}
-                        >
-                          <span className="size-label">{size.label}</span>
-                          <span className="size-price">₹{size.price}</span>
-                        </button>
+              {/* Personalization */}
+              <div className="custom-step">
+                <div className="step-header">
+                  <i className="bi bi-type"></i>
+                  <h3>Step 4: Add Text (Optional)</h3>
+                </div>
+                <div className="step-content">
+                  <div className="toggle-personalization">
+                    <input 
+                      type="checkbox" 
+                      id="add-text" 
+                      checked={addText}
+                      onChange={(e) => setAddText(e.target.checked)}
+                    />
+                    <label htmlFor="add-text">Add custom text</label>
+                  </div>
+
+                  {addText && (
+                    <div className="text-options">
+                      <div className="option-group">
+                        <label>Text Content</label>
+                        <textarea
+                          value={textContent}
+                          onChange={(e) => setTextContent(e.target.value.substring(0, 50))}
+                          placeholder="Enter your text (max 50 chars)"
+                          rows="2"
+                        />
+                        <small>{textContent.length}/50</small>
+                      </div>
+
+                      <div className="option-group">
+                        <label>Text Position</label>
+                        <select value={textPosition} onChange={(e) => setTextPosition(e.target.value)}>
+                          <option value="top">Top</option>
+                          <option value="center">Center</option>
+                          <option value="bottom">Bottom</option>
+                        </select>
+                      </div>
+
+                      <div className="option-group">
+                        <label>Text Size</label>
+                        <div className="size-buttons">
+                          {['small', 'medium', 'large'].map(size => (
+                            <button
+                              key={size}
+                              className={`size-btn ${textSize === size ? 'selected' : ''}`}
+                              onClick={() => setTextSize(size)}
+                            >
+                              {size.charAt(0).toUpperCase() + size.slice(1)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="text-preview">
+                        <span style={{ fontSize: textSize === 'small' ? '12px' : textSize === 'medium' ? '16px' : '20px' }}>
+                          {textContent || 'Preview'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quantity & Bulk Pricing */}
+              <div className="custom-step">
+                <div className="step-header">
+                  <i className="bi bi-stack"></i>
+                  <h3>Quantity & Bulk Discount</h3>
+                </div>
+                <div className="step-content">
+                  <div className="quantity-selector">
+                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>−</button>
+                    <input 
+                      type="number" 
+                      value={quantity} 
+                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      min="1"
+                    />
+                    <button onClick={() => setQuantity(quantity + 1)}>+</button>
+                  </div>
+
+                  <div className="bulk-pricing-info">
+                    <p><i className="bi bi-percent"></i> <strong>Bulk Discounts Available:</strong></p>
+                    <ul>
+                      <li>5-9 frames: <strong>5% OFF</strong></li>
+                      <li>10-19 frames: <strong>10% OFF</strong></li>
+                      <li>20+ frames: <strong>15% OFF</strong></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save Design */}
+              <div className="custom-step">
+                <div className="step-header">
+                  <i className="bi bi-bookmark-fill"></i>
+                  <h3>Save This Design</h3>
+                </div>
+                <div className="step-content">
+                  <div className="save-design-form">
+                    <input 
+                      type="text"
+                      placeholder="Give your design a name..."
+                      value={designName}
+                      onChange={(e) => setDesignName(e.target.value)}
+                    />
+                    <button onClick={saveDesign} className="btn-save-design">
+                      <i className="bi bi-bookmark"></i> Save Design
+                    </button>
+                  </div>
+
+                  {savedDesigns.length > 0 && (
+                    <div className="saved-designs-list">
+                      <h4>Your Saved Designs ({savedDesigns.length})</h4>
+                      {savedDesigns.map(design => (
+                        <div key={design.id} className="saved-design-item">
+                          <img src={design.photo} alt={design.name} />
+                          <div className="design-info">
+                            <p><strong>{design.name}</strong></p>
+                            <small>{design.savedAt}</small>
+                          </div>
+                          <div className="design-actions">
+                            <button onClick={() => loadDesign(design)} title="Load">
+                              <i className="bi bi-arrow-clockwise"></i>
+                            </button>
+                            <button onClick={() => deleteDesign(design.id)} title="Delete">
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          </div>
+                        </div>
                       ))}
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
@@ -323,69 +694,6 @@ const CustomFrame = () => {
 
       {/* Reviews Section */}
       <section className="reviews-section">
-        <Reviews pageName="custom" />
-      </section>
-    </>
-  );
-};
-
-export default CustomFrame;
-                  <div className={`frame-thumb ${frameStyle === 'ornate' ? 'selected' : ''}`} onClick={() => setFrameStyle('ornate')} style={{ backgroundImage: "url('https://img.freepik.com/free-vector/baroque-stucco-gold-frame-vector-floral-design_53876-170725.jpg')" }}>
-                    <span>Ornate</span>
-                  </div>
-                  <div className={`frame-thumb ${frameStyle === 'vintage' ? 'selected' : ''}`} onClick={() => setFrameStyle('vintage')} style={{ backgroundImage: "url('https://img.freepik.com/free-vector/realistic-gold-frame_1017-6401.jpg')" }}>
-                    <span>Vintage</span>
-                  </div>
-                  <div className={`frame-thumb ${frameStyle === 'modern' ? 'selected' : ''}`} onClick={() => setFrameStyle('modern')} style={{ backgroundImage: "url('https://img.freepik.com/free-vector/empty-golden-frame-vector_53876-172151.jpg')" }}>
-                    <span>Modern</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="option-card">
-                <h3><i className="bi bi-aspect-ratio"></i> Step 3: Orientation</h3>
-                <div className="toggle-group">
-                  <button className={`toggle-btn ${orientation === 'vertical' ? 'active' : ''}`} onClick={() => setOrientation('vertical')}>
-                    <i className="bi bi-pc-display"></i> Portrait
-                  </button>
-                  <button className={`toggle-btn ${orientation === 'horizontal' ? 'active' : ''}`} onClick={() => setOrientation('horizontal')}>
-                    <i className="bi bi-pc-display-horizontal"></i> Landscape
-                  </button>
-                </div>
-              </div>
-
-              <div className="option-card">
-                <h3><i className="bi bi-rulers"></i> Step 4: Select Size</h3>
-                <select className="modern-select" onChange={handleSizeChange} defaultValue="8x10">
-                  <option value="5x7" data-price="400">5 x 7 inches (₹400)</option>
-                  <option value="8x10" data-price="500">8 x 10 inches (₹500)</option>
-                  <option value="9x11.5" data-price="600">9 x 11.5 inches (₹600)</option>
-                  <option value="10x12" data-price="700">10 x 12 inches (₹700)</option>
-                  <option value="12x16" data-price="900">12 x 16 inches (₹900)</option>
-                  <option value="16x20" data-price="1200">16 x 20 inches (₹1200)</option>
-                  <option value="12x18" data-price="1000">12 x 18 inches (₹1000)</option>
-                  <option value="15x19.5" data-price="1300">15 x 19.5 inches (₹1300)</option>
-                  <option value="18x24" data-price="1500">18 x 24 inches (₹1500)</option>
-                  <option value="20x28" data-price="1800">20 x 28 inches (₹1800)</option>
-                  <option value="24x36" data-price="2200">24 x 36 inches (₹2200)</option>
-                </select>
-              </div>
-
-              <div className="actions-group">
-                <button className="btn-premium btn-outline" onClick={addToCart}>
-                  <i className="bi bi-cart-plus"></i> Add to Cart
-                </button>
-                <button className="btn-premium btn-primary" onClick={buyNow}>
-                  <i className="bi bi-bag-check"></i> Buy Now
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Reviews Section */}
-      <section className="reviews-section" style={{ padding: '100px 0', background: '#fafafa', borderTop: '1px solid #eee' }}>
         <Reviews pageName="custom" />
       </section>
     </>
