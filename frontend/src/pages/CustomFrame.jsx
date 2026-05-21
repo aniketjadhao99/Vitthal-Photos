@@ -2,42 +2,85 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import Reviews from '../components/Reviews';
+import '../styles/CustomFrame.css';
 
 const CustomFrame = () => {
   const [photo, setPhoto] = useState(null);
-  const [frameStyle, setFrameStyle] = useState('ornate');
+  const [frameStyle, setFrameStyle] = useState('modern');
   const [orientation, setOrientation] = useState('vertical');
   const [sizeAndPrice, setSizeAndPrice] = useState({ size: '8x10', price: 500 });
+  const [photoName, setPhotoName] = useState('');
   const navigate = useNavigate();
   const { addToast } = useToast();
+
+  const frames = [
+    {
+      id: 'modern',
+      name: 'Modern',
+      image: 'https://img.freepik.com/free-vector/empty-golden-frame-vector_53876-172151.jpg',
+      description: 'Clean & Minimalist',
+      borderStyle: '10px solid #222'
+    },
+    {
+      id: 'ornate',
+      name: 'Ornate',
+      image: 'https://img.freepik.com/free-vector/baroque-stucco-gold-frame-vector-floral-design_53876-170725.jpg',
+      description: 'Elegant & Decorative',
+      borderStyle: '20px solid transparent'
+    },
+    {
+      id: 'vintage',
+      name: 'Vintage',
+      image: 'https://img.freepik.com/free-vector/realistic-gold-frame_1017-6401.jpg',
+      description: 'Classic & Timeless',
+      borderStyle: '15px solid #8a6327'
+    }
+  ];
+
+  const sizes = [
+    { value: '5x7', label: '5 x 7 inches', price: 400 },
+    { value: '8x10', label: '8 x 10 inches', price: 500 },
+    { value: '9x11.5', label: '9 x 11.5 inches', price: 600 },
+    { value: '10x12', label: '10 x 12 inches', price: 700 },
+    { value: '12x16', label: '12 x 16 inches', price: 900 },
+    { value: '12x18', label: '12 x 18 inches', price: 1000 },
+    { value: '16x20', label: '16 x 20 inches', price: 1200 },
+    { value: '15x19.5', label: '15 x 19.5 inches', price: 1300 },
+    { value: '18x24', label: '18 x 24 inches', price: 1500 },
+    { value: '20x28', label: '20 x 28 inches', price: 1800 },
+    { value: '24x36', label: '24 x 36 inches', price: 2200 }
+  ];
 
   const handlePhotoUpload = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        addToast('File size must be less than 5MB', 'error');
+        return;
+      }
+      setPhotoName(file.name);
       const reader = new FileReader();
       reader.onload = (loadEvent) => {
         setPhoto(loadEvent.target.result);
+        addToast('Photo uploaded successfully!', 'success');
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSizeChange = (e) => {
-    const option = e.target.options[e.target.selectedIndex];
-    setSizeAndPrice({
-      size: option.value,
-      price: parseInt(option.getAttribute('data-price'))
-    });
+  const handleSizeChange = (value) => {
+    const selected = sizes.find(s => s.value === value);
+    setSizeAndPrice({ size: value, price: selected.price });
   };
 
-  const getBorderFromStyle = () => {
+  const getFrameStyle = () => {
+    const frame = frames.find(f => f.id === frameStyle);
     if (frameStyle === 'ornate') return '20px solid transparent';
     if (frameStyle === 'vintage') return '15px solid #8a6327';
-    if (frameStyle === 'modern') return '10px solid #222';
-    return '10px solid #000';
+    return '10px solid #222';
   };
 
-  const getBorderImage = () => {
+  const getFrameImage = () => {
     if (frameStyle === 'ornate') return 'url("https://img.freepik.com/free-vector/baroque-stucco-gold-frame-vector-floral-design_53876-170725.jpg") 30 stretch';
     if (frameStyle === 'vintage') return 'url("https://img.freepik.com/free-vector/realistic-gold-frame_1017-6401.jpg") 20 stretch';
     return 'none';
@@ -45,17 +88,16 @@ const CustomFrame = () => {
 
   const addToCart = () => {
     if (!photo) {
-      addToast("Please upload a photo first!", "error");
+      addToast('Please upload a photo first!', 'error');
       return;
     }
     const cart = JSON.parse(localStorage.getItem('vitthal_cart')) || [];
-    // Check if an identical custom frame (same style, size, orientation, and photo) already exists
     const existingItemIndex = cart.findIndex(i => 
       i.isCustom && 
       i.name === `Custom ${frameStyle.charAt(0).toUpperCase() + frameStyle.slice(1)} Frame` && 
       i.size === sizeAndPrice.size && 
       i.orientation === orientation &&
-      i.image === photo // Compare base64/url
+      i.image === photo
     );
 
     if (existingItemIndex > -1) {
@@ -75,12 +117,12 @@ const CustomFrame = () => {
     }
     localStorage.setItem('vitthal_cart', JSON.stringify(cart));
     window.dispatchEvent(new Event('cartUpdated'));
-    addToast('Custom frame added to cart!');
+    addToast('✓ Custom frame added to cart!', 'success');
   };
 
   const buyNow = () => {
     if (!photo) {
-      addToast("Please upload a photo first!", "error");
+      addToast('Please upload a photo first!', 'error');
       return;
     }
     addToCart();
@@ -90,64 +132,204 @@ const CustomFrame = () => {
   return (
     <>
       <section className="custom-frame-section">
-        <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
-          <div className="breadcrumbs" style={{ padding: '20px 0', marginBottom: '20px' }}>
-            <Link to="/">Home</Link> &nbsp; &gt; &nbsp; 
-            <span>Create Your Own</span>
+        <div className="container">
+          <div className="breadcrumbs">
+            <Link to="/">Home</Link>
+            <span className="separator">›</span>
+            <span>Create Your Own Frame</span>
           </div>
-          
-          <div className="custom-frame-container">
+
+          <div className="custom-frame-header">
+            <h1>Design Your Perfect Frame</h1>
+            <p>Personalize your memories with our easy-to-use customization tool</p>
+          </div>
+
+          <div className="progress-indicator">
+            <div className={`progress-step ${photo ? 'completed' : 'active'}`}>
+              <div className="step-number">1</div>
+              <div className="step-label">Upload Photo</div>
+            </div>
+            <div className="progress-line"></div>
+            <div className={`progress-step ${frameStyle ? 'active' : ''}`}>
+              <div className="step-number">2</div>
+              <div className="step-label">Select Frame</div>
+            </div>
+            <div className="progress-line"></div>
+            <div className={`progress-step ${sizeAndPrice.size ? 'active' : ''}`}>
+              <div className="step-number">3</div>
+              <div className="step-label">Choose Size</div>
+            </div>
+            <div className="progress-line"></div>
+            <div className="progress-step active">
+              <div className="step-number">4</div>
+              <div className="step-label">Checkout</div>
+            </div>
+          </div>
+
+          <div className="custom-frame-main">
             {/* Preview Section */}
-            <div className="preview-section">
-              <div className="preview-card" style={{ position: 'sticky', top: '100px' }}>
-                <div className="price-badge">
-                  <i className="bi bi-tag-fill"></i>
-                  <span>₹{sizeAndPrice.price}</span>
+            <div className="preview-container">
+              <div className="preview-card">
+                <div className="preview-header">
+                  <h3>Live Preview</h3>
+                  <span className="size-info">{sizeAndPrice.size} inches</span>
                 </div>
-                
-                <div className="frame-visualizer" id="frame-preview" style={{ 
-                  width: orientation === 'vertical' ? '250px' : '350px', 
-                  height: orientation === 'vertical' ? '350px' : '250px',
-                  border: getBorderFromStyle(),
-                  borderImage: getBorderImage(),
-                  backgroundColor: '#fff',
-                  boxShadow: '0 20px 50px rgba(0,0,0,0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  overflow: 'hidden',
-                  margin: '0 auto',
-                  transition: 'all 0.3s ease'
+
+                <div className="frame-visualizer" style={{ 
+                  width: orientation === 'vertical' ? '280px' : '380px', 
+                  height: orientation === 'vertical' ? '380px' : '280px',
+                  border: getFrameStyle(),
+                  borderImage: getFrameImage(),
                 }}>
                   {!photo ? (
-                    <div className="empty-preview-msg">
-                      <i className="bi bi-image" style={{ fontSize: '3rem', color: '#ddd' }}></i>
-                      <p>Upload your photo to see the preview</p>
+                    <div className="empty-preview">
+                      <i className="bi bi-image"></i>
+                      <p>Upload photo to see preview</p>
                     </div>
                   ) : (
-                    <img src={photo} alt="Your Photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={photo} alt="Preview" />
                   )}
+                </div>
+
+                <div className="price-display">
+                  <span className="price-label">Total Price</span>
+                  <span className="price-amount">₹{sizeAndPrice.price}</span>
                 </div>
               </div>
             </div>
 
-            {/* Options Section */}
-            <div className="options-panel">
-              <div className="option-card">
-                <h3><i className="bi bi-cloud-upload"></i> Step 1: Upload Photo</h3>
-                <div className="file-upload-wrapper">
-                  <div className="custom-file-input">
-                    <i className="bi bi-camera"></i>
-                    <span>Click to choose or drag & drop</span>
-                    <p style={{ fontSize: '0.8rem', color: '#999', marginTop: '5px' }}>Supports: JPG, PNG, WEBP (Max 5MB)</p>
+            {/* Customization Panel */}
+            <div className="customization-panel">
+              {/* Step 1: Upload Photo */}
+              <div className="custom-step">
+                <div className="step-header">
+                  <i className="bi bi-cloud-upload"></i>
+                  <h3>Step 1: Upload Your Photo</h3>
+                  {photo && <span className="badge-success">✓ Done</span>}
+                </div>
+                <div className="step-content">
+                  <div className="file-upload-box">
+                    <div className="file-upload-inner">
+                      <i className="bi bi-camera-fill"></i>
+                      <p className="upload-main">Click or drag & drop</p>
+                      <p className="upload-sub">JPG, PNG, WEBP (Max 5MB)</p>
+                    </div>
+                    <input 
+                      type="file" 
+                      id="photo-upload" 
+                      accept="image/*" 
+                      onChange={handlePhotoUpload}
+                      className="file-input"
+                    />
                   </div>
-                  <input type="file" id="photo-upload" accept="image/*" onChange={handlePhotoUpload} />
+                  {photoName && (
+                    <div className="uploaded-info">
+                      <i className="bi bi-check-circle-fill"></i>
+                      <span>{photoName}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="option-card">
-                <h3><i className="bi bi-palette"></i> Step 2: Choose Frame Style</h3>
-                <div className="frame-grid">
+              {/* Step 2: Frame Selection */}
+              <div className="custom-step">
+                <div className="step-header">
+                  <i className="bi bi-palette-fill"></i>
+                  <h3>Step 2: Choose Frame Style</h3>
+                </div>
+                <div className="step-content">
+                  <div className="frames-grid">
+                    {frames.map(frame => (
+                      <div 
+                        key={frame.id}
+                        className={`frame-option ${frameStyle === frame.id ? 'selected' : ''}`}
+                        onClick={() => setFrameStyle(frame.id)}
+                      >
+                        <div className="frame-preview-thumb" style={{ backgroundImage: `url(${frame.image})` }}>
+                          {frameStyle === frame.id && (
+                            <div className="selection-badge">
+                              <i className="bi bi-check2"></i>
+                            </div>
+                          )}
+                        </div>
+                        <div className="frame-info">
+                          <p className="frame-name">{frame.name}</p>
+                          <p className="frame-desc">{frame.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 3: Orientation & Size */}
+              <div className="custom-step">
+                <div className="step-header">
+                  <i className="bi bi-aspect-ratio-fill"></i>
+                  <h3>Step 3: Orientation & Size</h3>
+                </div>
+                <div className="step-content">
+                  <div className="orientation-selector">
+                    <label>Orientation</label>
+                    <div className="toggle-group">
+                      <button 
+                        className={`toggle-btn ${orientation === 'vertical' ? 'active' : ''}`}
+                        onClick={() => setOrientation('vertical')}
+                      >
+                        <i className="bi bi-portrait"></i> Portrait
+                      </button>
+                      <button 
+                        className={`toggle-btn ${orientation === 'horizontal' ? 'active' : ''}`}
+                        onClick={() => setOrientation('horizontal')}
+                      >
+                        <i className="bi bi-landscape"></i> Landscape
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="size-selector">
+                    <label htmlFor="size-select">Size</label>
+                    <div className="size-grid">
+                      {sizes.map(size => (
+                        <button
+                          key={size.value}
+                          className={`size-option ${sizeAndPrice.size === size.value ? 'selected' : ''}`}
+                          onClick={() => handleSizeChange(size.value)}
+                        >
+                          <span className="size-label">{size.label}</span>
+                          <span className="size-price">₹{size.price}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="action-buttons">
+                <button className="btn btn-secondary" onClick={addToCart}>
+                  <i className="bi bi-cart-plus"></i>
+                  Add to Cart
+                </button>
+                <button className="btn btn-primary" onClick={buyNow}>
+                  <i className="bi bi-bag-check-fill"></i>
+                  Buy Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Reviews Section */}
+      <section className="reviews-section">
+        <Reviews pageName="custom" />
+      </section>
+    </>
+  );
+};
+
+export default CustomFrame;
                   <div className={`frame-thumb ${frameStyle === 'ornate' ? 'selected' : ''}`} onClick={() => setFrameStyle('ornate')} style={{ backgroundImage: "url('https://img.freepik.com/free-vector/baroque-stucco-gold-frame-vector-floral-design_53876-170725.jpg')" }}>
                     <span>Ornate</span>
                   </div>
