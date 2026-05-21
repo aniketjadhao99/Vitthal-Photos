@@ -3,6 +3,56 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import Reviews from '../components/Reviews';
 import '../styles/CustomFrame.css';
+import Cropper from 'react-easy-crop';
+
+// Helpers for cropping
+const createImage = (url) =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.addEventListener('load', () => resolve(img));
+    img.addEventListener('error', (err) => reject(err));
+    img.setAttribute('crossOrigin', 'anonymous');
+    img.src = url;
+  });
+
+const getCroppedImg = async (imageSrc, pixelCrop, rotation = 0) => {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  const maxSize = Math.max(image.width, image.height);
+  const safeArea = 2 * ((maxSize / 2) * Math.sqrt(2));
+
+  canvas.width = safeArea;
+  canvas.height = safeArea;
+
+  ctx.translate(safeArea / 2, safeArea / 2);
+  ctx.rotate((rotation * Math.PI) / 180);
+  ctx.translate(-safeArea / 2, -safeArea / 2);
+
+  ctx.drawImage(
+    image,
+    (safeArea - image.width) / 2,
+    (safeArea - image.height) / 2
+  );
+
+  const data = ctx.getImageData(0, 0, safeArea, safeArea);
+
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+
+  ctx.putImageData(
+    data,
+    Math.round(0 - (safeArea - image.width) / 2 - pixelCrop.x),
+    Math.round(0 - (safeArea - image.height) / 2 - pixelCrop.y)
+  );
+
+  return new Promise((resolve) => {
+    canvas.toDataURL('image/jpeg', 0.9, (dataUrl) => resolve(dataUrl));
+    const result = canvas.toDataURL('image/jpeg', 0.9);
+    resolve(result);
+  });
+};
 
 const CustomFrame = () => {
   // Photo & Crop State
@@ -155,8 +205,26 @@ const CustomFrame = () => {
 
   const handleCropConfirm = () => {
     if (!photo) return;
-    setCropMode(false);
-    addToast('Photo cropped successfully!', 'success');
+    // Use cropper result to create cropped image
+    (async () => {
+      try {
+        const croppedDataUrl = await getCroppedImg(photo, croppedAreaPixels, cropRotation);
+        setPhoto(croppedDataUrl);
+        setCropMode(false);
+        addToast('Photo cropped successfully!', 'success');
+      } catch (err) {
+        console.error(err);
+        addToast('Failed to crop image', 'error');
+      }
+    })();
+  };
+
+  // Cropper state
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+  const onCropComplete = (croppedArea, croppedPixels) => {
+    setCroppedAreaPixels(croppedPixels);
   };
 
   const handleSizeChange = (value) => {
@@ -366,19 +434,26 @@ const CustomFrame = () => {
                     </div>
                   ) : (
                     <div className="crop-editor">
-                      <div className="crop-preview">
-                        <img src={photo} alt="Crop Preview" style={{
-                          transform: `scale(${cropZoom}) rotate(${cropRotation}deg)`
-                        }} />
+                      <div style={{ position: 'relative', width: '100%', height: 300, background: '#333' }}>
+                        <Cropper
+                          image={photo}
+                          crop={crop}
+                          zoom={cropZoom}
+                          rotation={cropRotation}
+                          aspect={orientation === 'vertical' ? 3 / 4 : 4 / 3}
+                          onCropChange={setCrop}
+                          onZoomChange={setCropZoom}
+                          onCropComplete={onCropComplete}
+                        />
                       </div>
                       <div className="crop-controls">
                         <div className="control-group">
                           <label>Zoom</label>
-                          <input 
-                            type="range" 
-                            min="1" 
-                            max="3" 
-                            step="0.1" 
+                          <input
+                            type="range"
+                            min="1"
+                            max="3"
+                            step="0.1"
                             value={cropZoom}
                             onChange={(e) => setCropZoom(parseFloat(e.target.value))}
                           />
@@ -387,14 +462,19 @@ const CustomFrame = () => {
                         <div className="control-group">
                           <label>Rotate</label>
                           <div className="rotate-buttons">
-                            <button onClick={() => setCropRotation(cropRotation - 90)}>↺ -90°</button>
+                            <button onClick={() => setCropRotation((r) => r - 90)}>↺ -90°</button>
                             <button onClick={() => setCropRotation(0)}>↻ Reset</button>
-                            <button onClick={() => setCropRotation(cropRotation + 90)}>↻ +90°</button>
+                            <button onClick={() => setCropRotation((r) => r + 90)}>↻ +90°</button>
                           </div>
                         </div>
-                        <button className="btn-crop-done" onClick={handleCropConfirm}>
-                          <i className="bi bi-check"></i> Done Cropping
-                        </button>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                          <button className="btn-crop-done" onClick={handleCropConfirm}>
+                            <i className="bi bi-check"></i> Done Cropping
+                          </button>
+                          <button className="btn" onClick={() => setCropMode(false)} style={{ background: '#eee', color: '#333' }}>
+                            Cancel
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
