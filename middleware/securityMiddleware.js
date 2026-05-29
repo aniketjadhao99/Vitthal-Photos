@@ -9,10 +9,15 @@ const securityHeaders = helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      // Disallow unsafe-inline to strengthen CSP. Inline scripts/styles
+      // should be replaced with hashed nonces where required.
+      // Allow secure external resources (CDNs, Google Fonts, S3) but disallow inline.
+      scriptSrc: ["'self'", 'https:'],
+      // Allow inline styles for compatibility (consider removing after refactor)
+      styleSrc: ["'self'", 'https:', "'unsafe-inline'"],
       imgSrc: ["'self'", 'data:', 'https:'],
-      connectSrc: ["'self'"],
+      connectSrc: ["'self'", 'https:'],
+      fontSrc: ["'self'", 'https:', 'data:'],
     },
   },
   hsts: {
@@ -59,38 +64,43 @@ const paymentLimiter = rateLimit({
 
 // 5. Data Sanitization - Clean all inputs
 const sanitizeInputs = (req, res, next) => {
-  if (req.body) {
-    for (const key in req.body) {
-      if (typeof req.body[key] === 'string') {
-        // Remove MongoDB operators
-        req.body[key] = mongoSanitize.sanitize(req.body[key]);
-        // Remove HTML/XSS attempts
-        req.body[key] = req.body[key]
-          .replace(/[<>\"'`]/g, '')
-          .trim();
+  // DEBUG: log incoming raw body for troubleshooting
+  try { console.log('DEBUG sanitizeInputs incoming body:', req.body); } catch (e) {}
+  const MAX_STR_LEN = 1000;
+
+  const sanitizeValue = (val, key) => {
+    if (typeof val === 'string') {
+      // Lightweight sanitizer: remove MongoDB operator chars and basic HTML chars
+      let cleaned = String(val);
+      // Preserve typical user fields like email; only strip dangerous chars for others
+      if (!(key && String(key).toLowerCase() === 'email')) {
+        cleaned = cleaned.replace(/\$/g, '');
+      }
+      cleaned = cleaned.replace(/[<>\"'`]/g, '').trim();
+      if (cleaned.length > MAX_STR_LEN) cleaned = cleaned.substring(0, MAX_STR_LEN);
+      return cleaned;
+    }
+    if (Array.isArray(val)) return val.map(sanitizeValue);
+    if (val && typeof val === 'object') return sanitizeObject(val);
+    return val;
+  };
+
+  const sanitizeObject = (obj) => {
+    const out = Array.isArray(obj) ? [] : {};
+    for (const k in obj) {
+      try {
+        out[k] = sanitizeValue(obj[k], k);
+      } catch (e) {
+        out[k] = undefined;
       }
     }
-  }
-  if (req.query) {
-    for (const key in req.query) {
-      if (typeof req.query[key] === 'string') {
-        req.query[key] = mongoSanitize.sanitize(req.query[key]);
-        req.query[key] = req.query[key]
-          .replace(/[<>\"'`]/g, '')
-          .trim();
-      }
-    }
-  }
-  if (req.params) {
-    for (const key in req.params) {
-      if (typeof req.params[key] === 'string') {
-        req.params[key] = mongoSanitize.sanitize(req.params[key]);
-        req.params[key] = req.params[key]
-          .replace(/[<>\"'`]/g, '')
-          .trim();
-      }
-    }
-  }
+    return out;
+  };
+
+  if (req.body) req.body = sanitizeObject(req.body);
+  if (req.query) req.query = sanitizeObject(req.query);
+  if (req.params) req.params = sanitizeObject(req.params);
+  try { console.log('DEBUG sanitizeInputs sanitized body:', req.body); } catch (e) {}
   next();
 };
 
@@ -103,7 +113,7 @@ const secureHeaders = (req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'");
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' https:; style-src 'self' https: 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:; font-src 'self' https: data:");
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   next();
 };
