@@ -16,6 +16,16 @@ const {
 } = require('../controllers/userController');
 
 const { User } = require('../lib/db');
+const validators = require('../utils/validators');
+
+// Simple input validation middleware for auth routes
+const validateAuthInput = (req, res, next) => {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ message: 'Please provide email and password' });
+    if (!validators.validateEmail(email)) return res.status(400).json({ message: 'Invalid email format' });
+    if (typeof password !== 'string' || password.length < 6) return res.status(400).json({ message: 'Invalid password' });
+    next();
+};
 
 // @desc    Get all users (Admin only)
 router.get('/', protect, async (req, res) => {
@@ -37,9 +47,9 @@ const rateLimiter = require('../middleware/rateLimitMiddleware');
 const authLimiter = rateLimiter(10, 15 * 60 * 1000); // 10 requests per 15 min
 const forgotLimiter = rateLimiter(5, 15 * 60 * 1000); // 5 requests per 15 min
 
-router.post('/', authLimiter, registerUser);
-router.post('/register', authLimiter, registerUser);
-router.post('/login', authLimiter, authUser);
+router.post('/', authLimiter, validateAuthInput, registerUser);
+router.post('/register', authLimiter, validateAuthInput, registerUser);
+router.post('/login', authLimiter, validateAuthInput, authUser);
 router.put('/profile', protect, updateUserProfile);
 router.put('/profile/password', protect, updateUserPassword);
 router.post('/forgot-password', forgotLimiter, forgotPassword);

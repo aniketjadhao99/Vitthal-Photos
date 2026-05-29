@@ -64,8 +64,6 @@ const paymentLimiter = rateLimit({
 
 // 5. Data Sanitization - Clean all inputs
 const sanitizeInputs = (req, res, next) => {
-  // DEBUG: log incoming raw body for troubleshooting
-  try { console.log('DEBUG sanitizeInputs incoming body:', req.body); } catch (e) {}
   const MAX_STR_LEN = 1000;
 
   const sanitizeValue = (val, key) => {
@@ -100,7 +98,6 @@ const sanitizeInputs = (req, res, next) => {
   if (req.body) req.body = sanitizeObject(req.body);
   if (req.query) req.query = sanitizeObject(req.query);
   if (req.params) req.params = sanitizeObject(req.params);
-  try { console.log('DEBUG sanitizeInputs sanitized body:', req.body); } catch (e) {}
   next();
 };
 
