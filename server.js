@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const crypto = require('crypto');
 const { connectDB } = require('./lib/db');
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
@@ -31,6 +32,20 @@ const {
 } = require('./middleware/securityMiddleware');
 
 const app = express();
+
+// Validate critical environment variables
+if (!process.env.JWT_SECRET) {
+  if (process.env.NODE_ENV && process.env.NODE_ENV === 'production') {
+    console.error('❌ FATAL: JWT_SECRET is not set in environment variables.');
+    console.error('Set JWT_SECRET in your production environment and restart the process.');
+    process.exit(1);
+  } else {
+    // Development fallback: generate a temporary secret so local dev doesn't break
+    const tempSecret = crypto.randomBytes(32).toString('hex');
+    process.env.JWT_SECRET = tempSecret;
+    console.warn('⚠️  WARNING: JWT_SECRET was not set. Using a temporary development secret.');
+  }
+}
 
 // Trust proxy when running behind a reverse proxy/load balancer
 // This is required for rate-limiters and secure cookies to work correctly
