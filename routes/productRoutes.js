@@ -5,6 +5,12 @@ const { s3 } = require('../middleware/uploadMiddleware');
 const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { protect } = require('../middleware/authMiddleware');
 
+// Escape user input before using in RegExp to prevent ReDoS and unintended matches
+const escapeRegex = (s) => {
+  if (typeof s !== 'string') return s;
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
 router.get('/', async (req, res) => {
   try {
     const products = await Product.find().sort({ createdAt: -1 });
@@ -37,8 +43,11 @@ router.get('/', async (req, res) => {
 // @route   GET /api/products/search/:query
 router.get('/search/:query', async (req, res) => {
   try {
-    const query = req.params.query;
-    const regex = new RegExp(query, 'i');
+    const query = String(req.params.query || '').trim();
+    if (query.length === 0) return res.status(400).json({ message: 'Empty search query' });
+    if (query.length > 200) return res.status(400).json({ message: 'Search query too long' });
+    const safe = escapeRegex(query);
+    const regex = new RegExp(safe, 'i');
     const products = await Product.find({
       $or: [
         { name: regex },
@@ -95,7 +104,10 @@ router.get('/filter', async (req, res) => {
       if (maxPrice) where.basePrice.$lte = Number(maxPrice);
     }
     if (search) {
-      const regex = new RegExp(search, 'i');
+      const qs = String(search || '').trim();
+      if (qs.length > 200) return res.status(400).json({ message: 'Search query too long' });
+      const safe = escapeRegex(qs);
+      const regex = new RegExp(safe, 'i');
       where.$or = [
         { name: regex },
         { description: regex }

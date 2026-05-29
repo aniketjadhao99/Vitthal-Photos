@@ -99,6 +99,8 @@ const authUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    console.log('DEBUG authUser req.headers:', req.headers);
+    try { console.log('DEBUG authUser req.body (raw):', JSON.stringify(req.body)); } catch (e) { console.log('DEBUG authUser req.body (inspect):', req.body); }
     // Validation
     if (!email || !password) {
       return res.status(400).json({ message: 'Please provide email and password' });

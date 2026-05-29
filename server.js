@@ -32,6 +32,10 @@ const {
 
 const app = express();
 
+// Trust proxy when running behind a reverse proxy/load balancer
+// This is required for rate-limiters and secure cookies to work correctly
+app.set('trust proxy', 1);
+
 // Global variable to track DB connection status
 let dbConnected = false;
 
@@ -137,10 +141,9 @@ app.get('*path', (req, res) => {
 app.use((err, req, res, next) => {
   console.error('❌ Server Error:', err.message);
   console.error(err.stack);
-  res.status(500).json({
-    message: 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
+  const payload = { message: 'Internal Server Error' };
+  if (process.env.NODE_ENV === 'development') payload.error = err.message;
+  res.status(500).json(payload);
 });
 
 const PORT = process.env.PORT || 5000;
