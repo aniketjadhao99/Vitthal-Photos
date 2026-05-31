@@ -360,7 +360,6 @@ const CustomFrame = () => {
                     {!mattingStyle && photo && <img src={photo} alt="Preview" />}
                     {!mattingStyle && !photo && <div className="empty-preview"><i className="bi bi-image"></i></div>}
                   </div>
-                )}
 
                 {/* Removed Material / Glass / Matting summary from UI per request */}
 
