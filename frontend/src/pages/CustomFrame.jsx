@@ -87,6 +87,7 @@ const CustomFrame = () => {
   const [showComparison, setShowComparison] = useState(false);
   const [savedDesigns, setSavedDesigns] = useState([]);
   const [designName, setDesignName] = useState('');
+  // removed 3D view and comparison features per admin request
   const [view3D, setView3D] = useState(false);
   
   const navigate = useNavigate();
@@ -332,17 +333,7 @@ const CustomFrame = () => {
           <div className="custom-frame-header">
             <h1>Design Your Perfect Frame</h1>
             <p>Professional frame customizer with all features</p>
-            <div className="view-toggle">
-              <button className={`toggle-view ${!view3D ? 'active' : ''}`} onClick={() => setView3D(false)}>
-                <i className="bi bi-eye"></i> 2D Preview
-              </button>
-              <button className={`toggle-view ${view3D ? 'active' : ''}`} onClick={() => setView3D(true)}>
-                <i className="bi bi-box"></i> 3D View
-              </button>
-              <button className="toggle-view" onClick={() => setShowComparison(!showComparison)}>
-                <i className="bi bi-diagram-3"></i> Compare
-              </button>
-            </div>
+            {/* 3D, Compare removed */}
           </div>
 
           <div className="custom-frame-main">
@@ -354,18 +345,7 @@ const CustomFrame = () => {
                   <span className="size-info">{sizeAndPrice.size} inches • {material}</span>
                 </div>
 
-                {view3D ? (
-                  <div className="frame-3d-view">
-                    <div className="frame-3d" style={{
-                      transform: 'rotateX(15deg) rotateY(-10deg)',
-                      boxShadow: '0 30px 60px rgba(0,0,0,0.3)'
-                    }}>
-                      {photo && <img src={photo} alt="3D Preview" />}
-                    </div>
-                    <p className="note">3D Preview</p>
-                  </div>
-                ) : (
-                  <div className="frame-visualizer" style={{ 
+                <div className="frame-visualizer" style={{ 
                     width: orientation === 'vertical' ? '260px' : '360px', 
                     height: orientation === 'vertical' ? '360px' : '260px',
                   }}>
@@ -382,22 +362,7 @@ const CustomFrame = () => {
                   </div>
                 )}
 
-                <div className="customization-summary">
-                  <div className="summary-item">
-                    <span>Material:</span>
-                    <strong>{materials.find(m => m.id === material)?.name}</strong>
-                  </div>
-                  <div className="summary-item">
-                    <span>Glass:</span>
-                    <strong>{glassOptions.find(g => g.id === glassFinish)?.name}</strong>
-                  </div>
-                  {mattingStyle !== 'none' && (
-                    <div className="summary-item">
-                      <span>Matting:</span>
-                      <strong>{mattingOptions.find(m => m.id === mattingStyle)?.name}</strong>
-                    </div>
-                  )}
-                </div>
+                {/* Removed Material / Glass / Matting summary from UI per request */}
 
                 <div className="price-display">
                   <span className="price-label">Total Price ({quantity}x)</span>

@@ -52,6 +52,19 @@ const Checkout = () => {
       price: item.price,
       product: item._id,
       size: item.size || 'Standard',
+      // include customization details so admin can see them
+      customization: item.customizations || {
+        hasCustomization: !!item.image,
+        userUploadedImage: item.image || null,
+        selectedSize: item.size || null,
+        selectedFrame: item.frameStyle || null,
+        selectedColor: item.color || null,
+        material: item.material || null,
+        glassFinish: item.glassFinish || null,
+        mattingStyle: item.mattingStyle || null,
+        orientation: item.orientation || null,
+        textContent: item.textContent || null
+      }
     }));
 
     const user = JSON.parse(localStorage.getItem('vitthal_user') || 'null');
