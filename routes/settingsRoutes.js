@@ -47,6 +47,6 @@ router.put('/', async (req, res) => {
         console.error('Settings update error:', error);
         res.status(500).json({ message: 'Server Error' });
     }
-}
+});
 
 module.exports = router;
