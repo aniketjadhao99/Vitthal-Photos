@@ -1,34 +1,13 @@
 const Razorpay = require('razorpay');
 
-// Initialize Razorpay with env vars (primary, reliable method)
+// CRITICAL: Initialize Razorpay ONLY with environment variables to prevent startup failures
+// Never attempt database queries during module load
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_default',
   key_secret: process.env.RAZORPAY_KEY_SECRET || 'default_secret'
 });
 
-// Get Razorpay credentials from database or env (lazy loaded, optional override)
-const getRazorpayCredentials = async () => {
-  try {
-    // Try to get from database only if needed
-    const prisma = require('../lib/prisma');
-    const settings = await prisma.settings.findFirst();
-    if (settings && settings.razorpayKeyId && settings.razorpayKeySecret) {
-      return {
-        key_id: settings.razorpayKeyId,
-        key_secret: settings.razorpayKeySecret
-      };
-    }
-  } catch (error) {
-    // Silently fallback to env vars if database fails
-    console.log('Using env vars for Razorpay (database not available)');
-  }
-  
-  // Fallback to environment variables
-  return {
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET
-  };
-};
+console.log('✅ Razorpay initialized with environment variables');
 
 // Create payment order
 const createPaymentOrder = async (amount, currency = 'INR', receipt) => {
@@ -41,17 +20,16 @@ const createPaymentOrder = async (amount, currency = 'INR', receipt) => {
     };
 
     const order = await razorpay.orders.create(options);
-    const credentials = await getRazorpayCredentials();
     
     return {
       success: true,
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      key: credentials.key_id
+      key: process.env.RAZORPAY_KEY_ID
     };
   } catch (error) {
-    console.error('Error creating payment order:', error);
+    console.error('❌ Error creating payment order:', error.message);
     return {
       success: false,
       error: error.message
