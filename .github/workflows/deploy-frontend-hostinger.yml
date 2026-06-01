@@ -37,9 +37,8 @@ jobs:
           password: ${{ secrets.HOSTINGER_PASSWORD }}
           protocol: ftp
           port: 21
-          local-dir: frontend/dist
+          local-dir: frontend/dist/
           server-dir: ${{ secrets.HOSTINGER_REMOTE_DIR }}
-          git-ftp-args: --insecure
 
       - name: Done
         run: echo "Deployed frontend/dist to Hostinger"
