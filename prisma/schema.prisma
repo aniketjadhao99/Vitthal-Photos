@@ -115,15 +115,17 @@ model UserWishlist {
 }
 
 model Settings {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  siteName      String   @default("Vitthal Photo Frames")
-  logoUrl       String   @default("/assets/images/logo.png")
-  contactEmail  String   @default("vitthalphotos99@gmail.com")
-  contactPhone  String   @default("+91 9876543210")
-  address       String   @default("Pandharpur, Maharashtra, India")
-  socialLinks   Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                      String   @id @default(auto()) @map("_id") @db.ObjectId
+  siteName                String   @default("Vitthal Photo Frames")
+  logoUrl                 String   @default("/assets/images/logo.png")
+  contactEmail            String   @default("vitthalphotos99@gmail.com")
+  contactPhone            String   @default("+91 9876543210")
+  address                 String   @default("Pandharpur, Maharashtra, India")
+  socialLinks             Json?
+  razorpayKeyId           String?
+  razorpayKeySecret       String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 }
 
 model Address {

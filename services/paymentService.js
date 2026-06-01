@@ -1,14 +1,46 @@
 const Razorpay = require('razorpay');
+const prisma = require('../lib/prisma');
 
-// Initialize Razorpay
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || 'your_razorpay_key_id',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || 'your_razorpay_key_secret'
-});
+// Get Razorpay credentials from settings or env
+const getRazorpayCredentials = async () => {
+  try {
+    const settings = await prisma.settings.findFirst();
+    if (settings && settings.razorpayKeyId && settings.razorpayKeySecret) {
+      return {
+        key_id: settings.razorpayKeyId,
+        key_secret: settings.razorpayKeySecret
+      };
+    }
+  } catch (error) {
+    console.log('Could not fetch Razorpay credentials from database, using env vars');
+  }
+  
+  // Fallback to environment variables
+  return {
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET
+  };
+};
+
+// Initialize Razorpay with credentials
+let razorpay = null;
+
+const initializeRazorpay = async () => {
+  const credentials = await getRazorpayCredentials();
+  razorpay = new Razorpay({
+    key_id: credentials.key_id,
+    key_secret: credentials.key_secret
+  });
+  return razorpay;
+};
 
 // Create payment order
 const createPaymentOrder = async (amount, currency = 'INR', receipt) => {
   try {
+    if (!razorpay) {
+      razorpay = await initializeRazorpay();
+    }
+    
     const options = {
       amount: amount * 100, // Razorpay expects amount in paisa
       currency,
@@ -17,12 +49,14 @@ const createPaymentOrder = async (amount, currency = 'INR', receipt) => {
     };
 
     const order = await razorpay.orders.create(options);
+    const credentials = await getRazorpayCredentials();
+    
     return {
       success: true,
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      key: process.env.RAZORPAY_KEY_ID
+      key: credentials.key_id
     };
   } catch (error) {
     console.error('Error creating payment order:', error);
@@ -37,8 +71,9 @@ const createPaymentOrder = async (amount, currency = 'INR', receipt) => {
 const verifyPayment = async (paymentId, orderId, signature) => {
   try {
     const crypto = require('crypto');
+    const credentials = await getRazorpayCredentials();
     const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .createHmac('sha256', credentials.key_secret)
       .update(orderId + '|' + paymentId)
       .digest('hex');
 
@@ -56,6 +91,9 @@ const verifyPayment = async (paymentId, orderId, signature) => {
 // Get payment details
 const getPaymentDetails = async (paymentId) => {
   try {
+    if (!razorpay) {
+      razorpay = await initializeRazorpay();
+    }
     const payment = await razorpay.payments.fetch(paymentId);
     return {
       success: true,

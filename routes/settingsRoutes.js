@@ -32,6 +32,8 @@ router.put('/', async (req, res) => {
                     contactPhone: req.body.contactPhone || undefined,
                     address: req.body.address || undefined,
                     socialLinks: req.body.socialLinks || undefined,
+                    razorpayKeyId: req.body.razorpayKeyId || undefined,
+                    razorpayKeySecret: req.body.razorpayKeySecret || undefined,
                 }
             });
             res.json({ ...updatedSettings, _id: updatedSettings.id });
@@ -45,6 +47,6 @@ router.put('/', async (req, res) => {
         console.error('Settings update error:', error);
         res.status(500).json({ message: 'Server Error' });
     }
-});
+}
 
 module.exports = router;
