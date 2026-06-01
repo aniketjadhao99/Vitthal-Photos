@@ -38,7 +38,7 @@ jobs:
           protocol: ftp
           port: 21
           local-dir: frontend/dist/
-          server-dir: ${{ secrets.HOSTINGER_REMOTE_DIR }}
+          server-dir: ${{ secrets.HOSTINGER_REMOTE_DIR }}/
 
       - name: Done
         run: echo "Deployed frontend/dist to Hostinger"
