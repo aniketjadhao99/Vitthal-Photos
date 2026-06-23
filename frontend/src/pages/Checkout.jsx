@@ -57,6 +57,11 @@ const Checkout = () => {
   const handleRazorpayPayment = async () => {
     setIsPlacingOrder(true);
     try {
+      // Verify Razorpay script is loaded
+      if (!window.Razorpay) {
+        throw new Error('Razorpay script not loaded. Please refresh the page.');
+      }
+
       // Step 1: Create Razorpay order
       const amountInPaisa = Math.round(total * 100); // Convert to paisa
       const createOrderResponse = await fetch(`${API_URL}/payment/create-order`, {
@@ -70,10 +75,12 @@ const Checkout = () => {
       });
 
       if (!createOrderResponse.ok) {
-        throw new Error('Failed to create payment order');
+        const errorData = await createOrderResponse.json();
+        throw new Error(errorData.message || 'Failed to create payment order');
       }
 
       const { orderId, key } = await createOrderResponse.json();
+      console.log('Order created:', orderId);
 
       // Step 2: Open Razorpay modal
       const options = {
@@ -83,9 +90,11 @@ const Checkout = () => {
         name: 'Vitthal Photo Frames',
         description: `Order for ${form.firstName} ${form.lastName}`,
         order_id: orderId,
+        method: form.payment === 'upi' ? 'upi' : 'card', // Restrict to selected method
         handler: async (response) => {
           // Step 3: Verify payment signature
           try {
+            console.log('Payment response:', response);
             const verifyResponse = await fetch(`${API_URL}/payment/verify`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -130,6 +139,7 @@ const Checkout = () => {
         }
       };
 
+      console.log('Opening Razorpay with method:', form.payment);
       // Open the Razorpay modal
       const paymentObject = new window.Razorpay(options);
       paymentObject.open();
