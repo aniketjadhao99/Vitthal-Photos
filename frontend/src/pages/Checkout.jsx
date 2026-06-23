@@ -44,6 +44,18 @@ const Checkout = () => {
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     
+    // Validate form
+    if (!form.firstName || !form.lastName || !form.email || !form.phone || !form.address || !form.city || !form.pincode) {
+      addToast('Please fill in all required fields', 'error');
+      return;
+    }
+
+    // Prevent double submission
+    if (isPlacingOrder) {
+      addToast('Please wait, processing your order...', 'info');
+      return;
+    }
+    
     // For COD, place order directly
     if (form.payment === 'cod') {
       await placeOrderDirectly('COD');
@@ -57,13 +69,28 @@ const Checkout = () => {
   const handleRazorpayPayment = async () => {
     setIsPlacingOrder(true);
     try {
-      // Verify Razorpay script is loaded
-      if (!window.Razorpay) {
-        throw new Error('Razorpay script not loaded. Please refresh the page.');
-      }
+      // Check Razorpay script is loaded
+      await new Promise((resolve, reject) => {
+        let retries = 0;
+        const checkRazorpay = () => {
+          if (window.Razorpay) {
+            resolve();
+          } else if (retries < 10) {
+            retries++;
+            setTimeout(checkRazorpay, 100);
+          } else {
+            reject(new Error('Razorpay script failed to load. Please refresh and try again.'));
+          }
+        };
+        checkRazorpay();
+      });
+
+      console.log('Razorpay script loaded successfully');
 
       // Step 1: Create Razorpay order
       const amountInPaisa = Math.round(total * 100); // Convert to paisa
+      console.log('Creating order for amount:', total, 'paise:', amountInPaisa);
+      
       const createOrderResponse = await fetch(`${API_URL}/payment/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -80,9 +107,12 @@ const Checkout = () => {
       }
 
       const { orderId, key } = await createOrderResponse.json();
-      console.log('Order created:', orderId);
+      console.log('✅ Order created successfully:', orderId);
 
       // Step 2: Open Razorpay modal
+      const paymentMethod = form.payment === 'upi' ? 'upi' : 'card';
+      console.log('Opening Razorpay modal for method:', paymentMethod);
+
       const options = {
         key: key,
         amount: amountInPaisa,
@@ -90,11 +120,11 @@ const Checkout = () => {
         name: 'Vitthal Photo Frames',
         description: `Order for ${form.firstName} ${form.lastName}`,
         order_id: orderId,
-        method: form.payment === 'upi' ? 'upi' : 'card', // Restrict to selected method
+        method: paymentMethod, // Restrict to selected method
         handler: async (response) => {
+          console.log('✅ Payment successful, response:', response);
           // Step 3: Verify payment signature
           try {
-            console.log('Payment response:', response);
             const verifyResponse = await fetch(`${API_URL}/payment/verify`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -111,6 +141,7 @@ const Checkout = () => {
 
             const verifyData = await verifyResponse.json();
             if (verifyData.success) {
+              console.log('✅ Payment verified, creating order...');
               // Step 4: Payment verified, now place the order
               await placeOrderDirectly('Razorpay', response.razorpay_payment_id);
             } else {
@@ -118,7 +149,7 @@ const Checkout = () => {
               setIsPlacingOrder(false);
             }
           } catch (error) {
-            console.error('Payment verification error:', error);
+            console.error('❌ Payment verification error:', error);
             addToast('Payment verification failed: ' + error.message, 'error');
             setIsPlacingOrder(false);
           }
@@ -133,18 +164,22 @@ const Checkout = () => {
         },
         modal: {
           ondismiss: () => {
+            console.log('User dismissed Razorpay modal');
             addToast('Payment cancelled', 'info');
             setIsPlacingOrder(false);
           }
         }
       };
 
-      console.log('Opening Razorpay with method:', form.payment);
-      // Open the Razorpay modal
+      console.log('Razorpay options:', options);
+      
+      // Step 3: Open the Razorpay modal
       const paymentObject = new window.Razorpay(options);
+      console.log('Opening Razorpay modal...');
       paymentObject.open();
+      
     } catch (error) {
-      console.error('Razorpay error:', error);
+      console.error('❌ Razorpay error:', error);
       addToast('Failed to initiate payment: ' + error.message, 'error');
       setIsPlacingOrder(false);
     }
