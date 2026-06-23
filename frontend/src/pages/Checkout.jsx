@@ -40,51 +40,158 @@ const Checkout = () => {
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
   const inp = { width: '100%', padding: '11px 14px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem', boxSizing: 'border-box' };
 
+  // Handle order placement - decides between COD and Razorpay
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
+    
+    // For COD, place order directly
+    if (form.payment === 'cod') {
+      await placeOrderDirectly('COD');
+    } else {
+      // For card/UPI, use Razorpay
+      await handleRazorpayPayment();
+    }
+  };
+
+  // Handle Razorpay payment flow
+  const handleRazorpayPayment = async () => {
     setIsPlacingOrder(true);
-
-    const orderItems = cartItems.map(item => ({
-      name: item.name,
-      qty: item.quantity || 1,
-      quantity: item.quantity || 1,
-      image: item.image,
-      price: item.price,
-      product: item._id,
-      size: item.size || 'Standard',
-      // include customization details so admin can see them
-      customization: item.customizations || {
-        hasCustomization: !!item.image,
-        userUploadedImage: item.image || null,
-        selectedSize: item.size || null,
-        selectedFrame: item.frameStyle || null,
-        selectedColor: item.color || null,
-        material: item.material || null,
-        glassFinish: item.glassFinish || null,
-        mattingStyle: item.mattingStyle || null,
-        orientation: item.orientation || null,
-        textContent: item.textContent || null
-      }
-    }));
-
-    const user = JSON.parse(localStorage.getItem('vitthal_user') || 'null');
-    const orderData = {
-      customerName: `${form.firstName} ${form.lastName}`.trim(),
-      email: form.email,
-      phone: form.phone,
-      address: form.address,
-      city: form.city,
-      postalCode: form.pincode,
-      orderItems,
-      totalPrice: subtotal,
-      paymentMethod: form.payment,
-      shippingAddress: { address: form.address, city: form.city, postalCode: form.pincode, country: 'India', phone: form.phone },
-      userId: user?._id || user?.id || null,
-      couponCode: coupon?.code || null,
-      discountAmount: coupon?.discount || 0
-    };
-
     try {
+      // Step 1: Create Razorpay order
+      const amountInPaisa = Math.round(total * 100); // Convert to paisa
+      const createOrderResponse = await fetch(`${API_URL}/payment/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: total, // Send in rupees
+          currency: 'INR',
+          receipt: `receipt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        })
+      });
+
+      if (!createOrderResponse.ok) {
+        throw new Error('Failed to create payment order');
+      }
+
+      const { orderId, key } = await createOrderResponse.json();
+
+      // Step 2: Open Razorpay modal
+      const options = {
+        key: key,
+        amount: amountInPaisa,
+        currency: 'INR',
+        name: 'Vitthal Photo Frames',
+        description: `Order for ${form.firstName} ${form.lastName}`,
+        order_id: orderId,
+        handler: async (response) => {
+          // Step 3: Verify payment signature
+          try {
+            const verifyResponse = await fetch(`${API_URL}/payment/verify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+
+            if (!verifyResponse.ok) {
+              throw new Error('Payment verification failed');
+            }
+
+            const verifyData = await verifyResponse.json();
+            if (verifyData.success) {
+              // Step 4: Payment verified, now place the order
+              await placeOrderDirectly('Razorpay', response.razorpay_payment_id);
+            } else {
+              addToast('Payment verification failed. Please try again.', 'error');
+              setIsPlacingOrder(false);
+            }
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            addToast('Payment verification failed: ' + error.message, 'error');
+            setIsPlacingOrder(false);
+          }
+        },
+        prefill: {
+          name: `${form.firstName} ${form.lastName}`,
+          email: form.email,
+          contact: form.phone
+        },
+        theme: {
+          color: '#E8AF39'
+        },
+        modal: {
+          ondismiss: () => {
+            addToast('Payment cancelled', 'info');
+            setIsPlacingOrder(false);
+          }
+        }
+      };
+
+      // Open the Razorpay modal
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+    } catch (error) {
+      console.error('Razorpay error:', error);
+      addToast('Failed to initiate payment: ' + error.message, 'error');
+      setIsPlacingOrder(false);
+    }
+  };
+
+  // Place order in database
+  const placeOrderDirectly = async (paymentMethod, paymentId = null) => {
+    try {
+      const orderItems = cartItems.map(item => ({
+        name: item.name,
+        qty: item.quantity || 1,
+        quantity: item.quantity || 1,
+        image: item.image,
+        price: item.price,
+        product: item._id,
+        size: item.size || 'Standard',
+        customization: item.customizations || {
+          hasCustomization: !!item.image,
+          userUploadedImage: item.image || null,
+          selectedSize: item.size || null,
+          selectedFrame: item.frameStyle || null,
+          selectedColor: item.color || null,
+          material: item.material || null,
+          glassFinish: item.glassFinish || null,
+          mattingStyle: item.mattingStyle || null,
+          orientation: item.orientation || null,
+          textContent: item.textContent || null
+        }
+      }));
+
+      const user = JSON.parse(localStorage.getItem('vitthal_user') || 'null');
+      
+      // Map payment method to proper format
+      let finalPaymentMethod = paymentMethod;
+      if (paymentMethod === 'Razorpay') {
+        finalPaymentMethod = form.payment === 'card' ? 'Card' : 'UPI';
+      } else if (paymentMethod === 'COD') {
+        finalPaymentMethod = 'Cash on Delivery';
+      }
+
+      const orderData = {
+        customerName: `${form.firstName} ${form.lastName}`.trim(),
+        email: form.email,
+        phone: form.phone,
+        address: form.address,
+        city: form.city,
+        postalCode: form.pincode,
+        orderItems,
+        totalPrice: subtotal,
+        paymentMethod: finalPaymentMethod,
+        paymentId: paymentId,
+        shippingAddress: { address: form.address, city: form.city, postalCode: form.pincode, country: 'India', phone: form.phone },
+        userId: user?._id || user?.id || null,
+        couponCode: coupon?.code || null,
+        discountAmount: coupon?.discount || 0
+      };
+
       const token = localStorage.getItem('vitthal_token');
       const res = await fetch(`${API_URL}/orders`, {
         method: 'POST',
@@ -93,22 +200,22 @@ const Checkout = () => {
       });
 
       if (res.ok) {
-        addToast(`Order placed via ${form.payment.toUpperCase()}!`, 'success');
+        addToast(`Order placed via ${finalPaymentMethod}!`, 'success');
+        localStorage.removeItem('vitthal_cart');
+        localStorage.removeItem('vitthal_coupon');
+        window.dispatchEvent(new Event('cartUpdated'));
+        setIsPlacingOrder(false);
+        navigate('/order-success');
       } else {
         const err = await res.json();
         addToast(err.message || 'Order failed. Try again.', 'error');
         setIsPlacingOrder(false);
-        return;
       }
-    } catch {
-      addToast('Order placed! (Offline Mode)', 'success');
+    } catch (error) {
+      console.error('Order placement error:', error);
+      addToast('Error placing order: ' + error.message, 'error');
+      setIsPlacingOrder(false);
     }
-
-    localStorage.removeItem('vitthal_cart');
-    localStorage.removeItem('vitthal_coupon');
-    window.dispatchEvent(new Event('cartUpdated'));
-    setIsPlacingOrder(false);
-    navigate('/order-success');
   };
 
   return (
