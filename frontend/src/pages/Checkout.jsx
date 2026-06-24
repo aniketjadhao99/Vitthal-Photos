@@ -44,30 +44,42 @@ const Checkout = () => {
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     
+    console.log('=== FORM SUBMISSION ===');
+    console.log('Current payment method:', form.payment);
+    console.log('isPlacingOrder state:', isPlacingOrder);
+    
     // Validate form
     if (!form.firstName || !form.lastName || !form.email || !form.phone || !form.address || !form.city || !form.pincode) {
+      console.warn('❌ Form validation failed - missing fields');
       addToast('Please fill in all required fields', 'error');
       return;
     }
 
     // Prevent double submission
     if (isPlacingOrder) {
+      console.warn('⚠️  Already processing, preventing double submission');
       addToast('Please wait, processing your order...', 'info');
       return;
     }
     
-    console.log('Form submitted with payment method:', form.payment);
+    // Set loading state IMMEDIATELY to block further clicks
+    setIsPlacingOrder(true);
+    
+    console.log('Payment method selected:', form.payment);
     
     // For COD, place order directly
     if (form.payment === 'cod') {
-      console.log('COD selected - proceeding with direct order');
+      console.log('✅ COD selected - proceeding with direct order');
       await placeOrderDirectly('COD');
     } else if (form.payment === 'card' || form.payment === 'upi') {
       // For card/UPI, MUST use Razorpay - block any direct order creation
-      console.log('Payment method selected:', form.payment, '- opening Razorpay');
+      console.log('📱 Non-COD payment selected:', form.payment, '- MUST open Razorpay');
       await handleRazorpayPayment();
     } else {
-      addToast('Please select a payment method', 'error');
+      // This should never happen, but if it does, alert user
+      console.error('❌ INVALID PAYMENT METHOD:', form.payment);
+      setIsPlacingOrder(false);
+      addToast(`Invalid payment method: "${form.payment}". Please select a valid payment option.`, 'error');
     }
   };
 
@@ -197,20 +209,18 @@ const Checkout = () => {
   // Place order in database
   const placeOrderDirectly = async (paymentMethod, paymentId = null) => {
     try {
-      // CRITICAL VALIDATION: Razorpay/Card/UPI orders MUST have paymentId
-      if ((paymentMethod === 'Razorpay' || paymentMethod === 'Card' || paymentMethod === 'UPI') && !paymentId) {
-        const errorMsg = `${paymentMethod} payment requires payment ID. Please complete payment first.`;
-        console.error('❌', errorMsg);
-        addToast(errorMsg, 'error');
+      console.log('>>> placeOrderDirectly called with:', { paymentMethod, hasPaymentId: !!paymentId });
+      
+      // CRITICAL SAFETY CHECK: Block any non-COD order without paymentId
+      if (paymentMethod !== 'COD' && paymentMethod !== 'Cash on Delivery' && !paymentId) {
+        const errorMsg = `SECURITY BLOCK: ${paymentMethod} order requires paymentId. Refusing to submit.`;
+        console.error('🚫', errorMsg);
+        addToast('Payment verification required. Please complete payment first.', 'error');
         setIsPlacingOrder(false);
         return;
       }
 
-      console.log('Creating order:', {
-        method: paymentMethod,
-        hasPaymentId: !!paymentId,
-        paymentId: paymentId ? '[REDACTED]' : 'NONE'
-      });
+      console.log('✅ Payment validation passed, proceeding with order');
 
       const orderItems = cartItems.map(item => ({
         name: item.name,
