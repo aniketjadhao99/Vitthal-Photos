@@ -271,11 +271,42 @@ const Checkout = () => {
         discountAmount: coupon?.discount || 0
       };
 
+      // Validate orderData before sending
+      console.log('🔍 Validating order data...');
+      const requiredFields = ['customerName', 'email', 'phone', 'address', 'city', 'postalCode', 'orderItems', 'totalPrice', 'paymentMethod'];
+      const missingFields = requiredFields.filter(field => !orderData[field]);
+      
+      if (missingFields.length > 0) {
+        console.error('❌ Missing required fields:', missingFields);
+        addToast(`Missing required fields: ${missingFields.join(', ')}`, 'error');
+        setIsPlacingOrder(false);
+        return;
+      }
+
+      if (!Array.isArray(orderData.orderItems) || orderData.orderItems.length === 0) {
+        console.error('❌ orderItems is empty or not an array');
+        addToast('No items in order', 'error');
+        setIsPlacingOrder(false);
+        return;
+      }
+
+      if (typeof orderData.totalPrice !== 'number' || orderData.totalPrice <= 0) {
+        console.error('❌ Invalid totalPrice:', orderData.totalPrice);
+        addToast('Invalid order total', 'error');
+        setIsPlacingOrder(false);
+        return;
+      }
+
+      console.log('✅ All validations passed');
+
       console.log('📤 Sending order to server...', {
         total: orderData.totalPrice,
         method: orderData.paymentMethod,
         hasPaymentId: !!orderData.paymentId
       });
+      
+      // Log the complete payload being sent
+      console.log('📋 Full order payload:', orderData);
 
       const token = localStorage.getItem('vitthal_token');
       const res = await fetch(`${API_URL}/orders`, {
@@ -283,6 +314,8 @@ const Checkout = () => {
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(orderData)
       });
+
+      console.log('📡 Server response status:', res.status, res.statusText);
 
       if (res.ok) {
         const createdOrder = await res.json();
@@ -294,14 +327,29 @@ const Checkout = () => {
         setIsPlacingOrder(false);
         navigate('/order-success');
       } else {
-        const err = await res.json();
-        console.error('❌ Server rejected order:', err);
-        addToast(err.message || 'Order failed. Try again.', 'error');
+        // Parse and log detailed error response
+        let errorDetails = {};
+        try {
+          errorDetails = await res.json();
+        } catch (e) {
+          errorDetails = { message: `HTTP ${res.status}: ${res.statusText}` };
+        }
+        
+        console.error('❌ SERVER REJECTED ORDER');
+        console.error('Status:', res.status, res.statusText);
+        console.error('Error details:', errorDetails);
+        console.error('Order data that failed:', orderData);
+        
+        // Show detailed error to user
+        const errorMessage = errorDetails.message || errorDetails.error || 'Order creation failed';
+        addToast(`Error: ${errorMessage}`, 'error');
         setIsPlacingOrder(false);
       }
     } catch (error) {
-      console.error('❌ Order placement error:', error.message);
-      addToast('Error placing order: ' + error.message, 'error');
+      console.error('❌ NETWORK ERROR during order submission');
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      addToast('Network error: ' + error.message, 'error');
       setIsPlacingOrder(false);
     }
   };
