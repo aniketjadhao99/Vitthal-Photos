@@ -30,7 +30,7 @@ const Barcode = ({ value, width = 1.5, height = 40, fontSize = 12, displayValue 
   return <svg ref={svgRef} />;
 };
 
-const TABS = ['dashboard', 'products', 'orders', 'users', 'reviews', 'coupons', 'returns', 'settings'];
+const TABS = ['dashboard', 'products', 'orders', 'users', 'reviews', 'coupons', 'returns', 'frameStyles', 'settings'];
 
 const badge = (status = '') => {
   const s = status.toLowerCase();
@@ -69,8 +69,17 @@ export default function AdminPanel() {
   const [reviews, setReviews]     = useState([]);
   const [coupons, setCoupons]     = useState([]);
   const [returns, setReturns]     = useState([]);
+  const [frameStyles, setFrameStyles] = useState([
+    { id: 'modern', name: 'Modern', description: 'Clean & Minimalist', borderColor: '#d4af37', borderWidth: 8 },
+    { id: 'ornate', name: 'Ornate', description: 'Elegant & Decorative', borderColor: '#b8860b', borderWidth: 12 },
+    { id: 'vintage', name: 'Vintage', description: 'Classic & Timeless', borderColor: '#8b7355', borderWidth: 10 }
+  ]);
   const [settings, setSettings]   = useState({ siteName: 'Vitthal Photo Frames', contactEmail: 'vitthalphotos99@gmail.com', contactPhone: '' });
   const [loading, setLoading]     = useState(false);
+  
+  // Frame Styles Management
+  const [newFrameStyle, setNewFrameStyle] = useState({ name: '', description: '', borderColor: '#d4af37', borderWidth: 8 });
+  const [editingFrameStyle, setEditingFrameStyle] = useState(null);
 
   // --- New features state ---
   // Search & Filter
@@ -258,6 +267,11 @@ export default function AdminPanel() {
     }
   }, [navigate, addToast]);
 
+  // Save frame styles to localStorage
+  useEffect(() => {
+    localStorage.setItem('vitthal_frameStyles', JSON.stringify(frameStyles));
+  }, [frameStyles]);
+
   const token = localStorage.getItem('vitthal_token');
   const headers = useMemo(() => ({ 
     'Content-Type': 'application/json', 
@@ -363,6 +377,7 @@ export default function AdminPanel() {
         else if (tab === 'reviews') await loadReviews();
         else if (tab === 'coupons') await loadCoupons();
         else if (tab === 'returns') await loadReturns();
+        else if (tab === 'frameStyles') { /* Frame styles already loaded in state */ }
         else if (tab === 'settings') await loadSettings();
       } catch (err) {
         console.error('❌ Fetch data error:', err);
@@ -1118,6 +1133,192 @@ export default function AdminPanel() {
                 })}
                </tbody>
             </table>
+          </div>
+        )}
+
+        {/* FRAME STYLES */}
+        {!loading && tab === 'frameStyles' && (
+          <div style={{ maxWidth: '1000px' }}>
+            <h3 style={{ marginBottom: '24px' }}>Manage Frame Styles</h3>
+            
+            {/* Add New Frame Style Form */}
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #f1f5f9', marginBottom: '32px' }}>
+              <h4 style={{ marginBottom: '20px' }}>
+                {editingFrameStyle ? 'Edit Frame Style' : 'Add New Frame Style'}
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                <div>
+                  <label style={{ display:'block', marginBottom:8, fontSize:'0.875rem', fontWeight:600 }}>Style Name *</label>
+                  <input 
+                    type="text" 
+                    value={editingFrameStyle?.name || newFrameStyle.name} 
+                    onChange={e => {
+                      if (editingFrameStyle) setEditingFrameStyle({...editingFrameStyle, name: e.target.value});
+                      else setNewFrameStyle({...newFrameStyle, name: e.target.value});
+                    }}
+                    placeholder="e.g., Modern"
+                    style={{ width:'100%', padding:'12px', borderRadius:10, border:'1px solid #e2e8f0' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display:'block', marginBottom:8, fontSize:'0.875rem', fontWeight:600 }}>Description *</label>
+                  <input 
+                    type="text" 
+                    value={editingFrameStyle?.description || newFrameStyle.description}
+                    onChange={e => {
+                      if (editingFrameStyle) setEditingFrameStyle({...editingFrameStyle, description: e.target.value});
+                      else setNewFrameStyle({...newFrameStyle, description: e.target.value});
+                    }}
+                    placeholder="e.g., Clean & Minimalist"
+                    style={{ width:'100%', padding:'12px', borderRadius:10, border:'1px solid #e2e8f0' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display:'block', marginBottom:8, fontSize:'0.875rem', fontWeight:600 }}>Border Color</label>
+                  <input 
+                    type="color" 
+                    value={editingFrameStyle?.borderColor || newFrameStyle.borderColor}
+                    onChange={e => {
+                      if (editingFrameStyle) setEditingFrameStyle({...editingFrameStyle, borderColor: e.target.value});
+                      else setNewFrameStyle({...newFrameStyle, borderColor: e.target.value});
+                    }}
+                    style={{ width:'100%', height: '45px', borderRadius:10, border:'1px solid #e2e8f0', cursor: 'pointer' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display:'block', marginBottom:8, fontSize:'0.875rem', fontWeight:600 }}>Border Width (px) *</label>
+                  <input 
+                    type="number" 
+                    value={editingFrameStyle?.borderWidth || newFrameStyle.borderWidth}
+                    onChange={e => {
+                      if (editingFrameStyle) setEditingFrameStyle({...editingFrameStyle, borderWidth: parseInt(e.target.value)});
+                      else setNewFrameStyle({...newFrameStyle, borderWidth: parseInt(e.target.value)});
+                    }}
+                    min="1" max="50"
+                    style={{ width:'100%', padding:'12px', borderRadius:10, border:'1px solid #e2e8f0' }}
+                  />
+                </div>
+              </div>
+              
+              {/* Preview */}
+              <div style={{ marginBottom: '20px', padding: '20px', background: '#f9f9f9', borderRadius: '10px', textAlign: 'center' }}>
+                <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '12px' }}>Preview:</p>
+                <div style={{
+                  width: '200px',
+                  height: '200px',
+                  border: `${editingFrameStyle?.borderWidth || newFrameStyle.borderWidth}px solid ${editingFrameStyle?.borderColor || newFrameStyle.borderColor}`,
+                  margin: '0 auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#fff',
+                  fontSize: '0.875rem',
+                  color: '#999'
+                }}>
+                  Preview
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => {
+                    if (editingFrameStyle) {
+                      const updated = frameStyles.map(f => f.id === editingFrameStyle.id ? editingFrameStyle : f);
+                      setFrameStyles(updated);
+                      setEditingFrameStyle(null);
+                    } else {
+                      if (!newFrameStyle.name || !newFrameStyle.description || newFrameStyle.borderWidth < 1) {
+                        alert('Please fill all required fields');
+                        return;
+                      }
+                      const id = 'style_' + Date.now();
+                      setFrameStyles([...frameStyles, { id, ...newFrameStyle }]);
+                      setNewFrameStyle({ name: '', description: '', borderColor: '#d4af37', borderWidth: 8 });
+                    }
+                  }}
+                  style={btn('#10b981')}
+                >
+                  {editingFrameStyle ? 'Update Style' : 'Add Style'}
+                </button>
+                {editingFrameStyle && (
+                  <button onClick={() => setEditingFrameStyle(null)} style={btn('#6b7280')}>
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Frame Styles List */}
+            <div style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
+              <h4 style={{ marginBottom: '20px' }}>Existing Frame Styles ({frameStyles.length})</h4>
+              {frameStyles.length === 0 ? (
+                <p style={{ color: '#999' }}>No frame styles added yet.</p>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={th}>Name</th>
+                        <th style={th}>Description</th>
+                        <th style={th}>Border Color</th>
+                        <th style={th}>Border Width (px)</th>
+                        <th style={th}>Preview</th>
+                        <th style={th}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {frameStyles.map(style => (
+                        <tr key={style.id}>
+                          <td style={td}><strong>{style.name}</strong></td>
+                          <td style={td}>{style.description}</td>
+                          <td style={td}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{
+                                width: '24px',
+                                height: '24px',
+                                background: style.borderColor,
+                                borderRadius: '4px',
+                                border: '1px solid #ddd'
+                              }} />
+                              <span style={{ fontSize: '0.875rem', color: '#666' }}>{style.borderColor}</span>
+                            </div>
+                          </td>
+                          <td style={td}>{style.borderWidth}</td>
+                          <td style={td}>
+                            <div style={{
+                              width: '60px',
+                              height: '60px',
+                              border: `${style.borderWidth}px solid ${style.borderColor}`,
+                              borderRadius: '4px'
+                            }} />
+                          </td>
+                          <td style={td}>
+                            <button
+                              onClick={() => setEditingFrameStyle(style)}
+                              style={btn('#3b82f6')}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => {
+                                const idx = frameStyles.findIndex(f => f.id === style.id);
+                                if (idx > -1) {
+                                  const updated = frameStyles.filter((_, i) => i !== idx);
+                                  setFrameStyles(updated);
+                                }
+                              }}
+                              style={btn('#ef4444')}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

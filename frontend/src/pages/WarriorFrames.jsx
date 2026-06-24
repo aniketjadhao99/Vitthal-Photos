@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
+import CollectionsNav from '../components/CollectionsNav';
 
 const API_URL = '/api';
 
@@ -77,6 +78,8 @@ const WarriorFrames = () => {
         <h1 style={{ fontSize: '2.5rem', color: '#333', marginBottom: '10px', fontWeight: 800 }}>Warrior Collection</h1>
         <p style={{ color: '#666', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>Celebrate the legacy and valor of India's greatest heroes with our premium warrior frames.</p>
       </div>
+
+      <CollectionsNav />
 
       <div className="collection-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px', marginBottom: '80px' }}>
         {loading ? (

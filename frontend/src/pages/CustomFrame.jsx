@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import Reviews from '../components/Reviews';
+import CollectionsNav from '../components/CollectionsNav';
 import '../styles/CustomFrame.css';
 import Cropper from 'react-easy-crop';
 
@@ -94,13 +95,14 @@ const CustomFrame = () => {
   const { addToast } = useToast();
   const fileInputRef = useRef(null);
 
-  // Data
-  const frames = [
-    { id: 'modern', name: 'Modern', image: 'https://img.freepik.com/free-vector/empty-golden-frame-vector_53876-172151.jpg', description: 'Clean & Minimalist' },
-    { id: 'ornate', name: 'Ornate', image: 'https://img.freepik.com/free-vector/baroque-stucco-gold-frame-vector-floral-design_53876-170725.jpg', description: 'Elegant & Decorative' },
-    { id: 'vintage', name: 'Vintage', image: 'https://img.freepik.com/free-vector/realistic-gold-frame_1017-6401.jpg', description: 'Classic & Timeless' }
-  ];
+  // State for dynamic frame styles
+  const [frames, setFrames] = useState([
+    { id: 'modern', name: 'Modern', image: 'https://img.freepik.com/free-vector/empty-golden-frame-vector_53876-172151.jpg', description: 'Clean & Minimalist', borderColor: '#d4af37', borderWidth: 8 },
+    { id: 'ornate', name: 'Ornate', image: 'https://img.freepik.com/free-vector/baroque-stucco-gold-frame-vector-floral-design_53876-170725.jpg', description: 'Elegant & Decorative', borderColor: '#b8860b', borderWidth: 12 },
+    { id: 'vintage', name: 'Vintage', image: 'https://img.freepik.com/free-vector/realistic-gold-frame_1017-6401.jpg', description: 'Classic & Timeless', borderColor: '#8b7355', borderWidth: 10 }
+  ]);
 
+  // Data
   const sizes = [
     { value: '5x7', label: '5 x 7 inches', price: 400 },
     { value: '8x10', label: '8 x 10 inches', price: 500 },
@@ -121,30 +123,20 @@ const CustomFrame = () => {
     { id: 'plastic', name: 'Plastic', price: -100, icon: 'bi-boxes' }
   ];
 
-  const glassOptions = [
-    { id: 'regular', name: 'Regular Glass', price: 0 },
-    { id: 'matte', name: 'Matte Glass', price: 150 },
-    { id: 'gloss', name: 'Gloss Glass', price: 150 }
-  ];
 
-  const mattingOptions = [
-    { id: 'none', name: 'No Matting', width: 0 },
-    { id: 'single', name: 'Single Mat', width: 1.5 },
-    { id: 'double', name: 'Double Mat', width: 2.5 }
-  ];
-
-  const mattingColors = [
-    { id: 'white', name: 'White', color: '#ffffff' },
-    { id: 'cream', name: 'Cream', color: '#fffdd0' },
-    { id: 'black', name: 'Black', color: '#000000' },
-    { id: 'gray', name: 'Gray', color: '#808080' },
-    { id: 'beige', name: 'Beige', color: '#f5f5dc' }
-  ];
 
   // Load saved designs on mount
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('vitthal_saved_designs')) || [];
     setSavedDesigns(saved);
+  }, []);
+
+  // Load frame styles from localStorage (updated by AdminPanel)
+  useEffect(() => {
+    const savedFrameStyles = JSON.parse(localStorage.getItem('vitthal_frameStyles'));
+    if (savedFrameStyles && Array.isArray(savedFrameStyles) && savedFrameStyles.length > 0) {
+      setFrames(savedFrameStyles);
+    }
   }, []);
 
   // Calculate price with all add-ons and bulk discount
@@ -155,16 +147,6 @@ const CustomFrame = () => {
     // Material price
     const materialInfo = materials.find(m => m.id === material);
     if (materialInfo) addOnPrice += materialInfo.price;
-    
-    // Glass price
-    const glassInfo = glassOptions.find(g => g.id === glassFinish);
-    if (glassInfo) addOnPrice += glassInfo.price;
-    
-    // Matting price (₹100 per inch of matting)
-    if (mattingStyle !== 'none') {
-      const mattingInfo = mattingOptions.find(m => m.id === mattingStyle);
-      addOnPrice += (mattingInfo.width * 100);
-    }
     
     // Text price
     let textPrice = 0;
@@ -336,6 +318,8 @@ const CustomFrame = () => {
             {/* 3D, Compare removed */}
           </div>
 
+          <CollectionsNav />
+
           <div className="custom-frame-main">
             {/* Preview Container */}
             <div className="preview-container">
@@ -348,17 +332,13 @@ const CustomFrame = () => {
                 <div className="frame-visualizer" style={{ 
                     width: orientation === 'vertical' ? '260px' : '360px', 
                     height: orientation === 'vertical' ? '360px' : '260px',
+                    border: `${frames.find(f => f.id === frameStyle)?.borderWidth || 8}px solid ${frames.find(f => f.id === frameStyle)?.borderColor || '#d4af37'}`,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                   }}>
-                    {mattingStyle !== 'none' && (
-                      <div className="matting" style={{ 
-                        borderWidth: `${mattingWidth * 20}px`,
-                        borderColor: mattingColors.find(c => c.id === mattingColor)?.color
-                      }}>
-                        {photo ? <img src={photo} alt="Preview" /> : <div className="empty-preview"><i className="bi bi-image"></i></div>}
-                      </div>
-                    )}
-                    {!mattingStyle && photo && <img src={photo} alt="Preview" />}
-                    {!mattingStyle && !photo && <div className="empty-preview"><i className="bi bi-image"></i></div>}
+                    {photo ? <img src={photo} alt="Preview" /> : <div className="empty-preview"><i className="bi bi-image"></i></div>}
+                  </div>
+                  <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.9rem', color: '#666', fontWeight: '500' }}>
+                    Frame: {frames.find(f => f.id === frameStyle)?.name}
                   </div>
 
                 {/* Removed Material / Glass / Matting summary from UI per request */}
@@ -488,64 +468,17 @@ const CustomFrame = () => {
                     </div>
                   </div>
 
-                  <div className="option-group">
-                    <label>Glass Finish</label>
-                    <div className="glass-grid">
-                      {glassOptions.map(glass => (
-                        <button
-                          key={glass.id}
-                          className={`glass-btn ${glassFinish === glass.id ? 'selected' : ''}`}
-                          onClick={() => setGlassFinish(glass.id)}
-                        >
-                          <span>{glass.name}</span>
-                          <small>+₹{glass.price}</small>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+
                 </div>
               </div>
 
-              {/* Matting & Size */}
+              {/* Size */}
               <div className="custom-step">
                 <div className="step-header">
                   <i className="bi bi-border"></i>
-                  <h3>Step 3: Matting & Size</h3>
+                  <h3>Step 3: Size</h3>
                 </div>
                 <div className="step-content">
-                  <div className="option-group">
-                    <label>Matting Style</label>
-                    <div className="matting-grid">
-                      {mattingOptions.map(mat => (
-                        <button
-                          key={mat.id}
-                          className={`matting-btn ${mattingStyle === mat.id ? 'selected' : ''}`}
-                          onClick={() => setMattingStyle(mat.id)}
-                        >
-                          {mat.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {mattingStyle !== 'none' && (
-                    <div className="option-group">
-                      <label>Matting Color</label>
-                      <div className="color-grid">
-                        {mattingColors.map(color => (
-                          <button
-                            key={color.id}
-                            className={`color-btn ${mattingColor === color.id ? 'selected' : ''}`}
-                            onClick={() => setMattingColor(color.id)}
-                            style={{ backgroundColor: color.color }}
-                            title={color.name}
-                          >
-                            {mattingColor === color.id && <i className="bi bi-check"></i>}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   <div className="option-group">
                     <label>Size</label>

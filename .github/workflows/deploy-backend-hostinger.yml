@@ -1,0 +1,38 @@
+name: Deploy Backend to Hostinger
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'server.js'
+      - 'services/**'
+      - 'controllers/**'
+      - 'models/**'
+      - 'routes/**'
+      - 'middleware/**'
+      - 'config/**'
+      - 'package.json'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Hostinger
+        env:
+          DEPLOY_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.HOSTINGER_HOST }}
+          DEPLOY_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
+          DEPLOY_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p $DEPLOY_PORT $DEPLOY_HOST >> ~/.ssh/known_hosts
+          
+          ssh -i ~/.ssh/deploy_key -p $DEPLOY_PORT $DEPLOY_USER@$DEPLOY_HOST "cd /home/$DEPLOY_USER && git pull origin main && pm2 restart all && pm2 list"
+
+      - name: Deployment Success
+        run: echo "Backend deployed successfully!"

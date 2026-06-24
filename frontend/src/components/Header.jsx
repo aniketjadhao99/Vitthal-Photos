@@ -86,9 +86,12 @@ const Header = () => {
           <li>
             <select id="category-select" className="dropdown" onChange={handleCategorySelect} value="">
               <option value="" disabled>Select Frame</option>
-              <option value="god">God</option>
-              <option value="warriors">Warriors</option>
-              <option value="custome_frame">Custom Frame</option>
+              <option value="god">God Frames</option>
+              <option value="warriors">Warrior Frames</option>
+              <option value="collage">Collage Frames</option>
+              <option value="family">Family Frames</option>
+              <option value="kids">Kids Frames</option>
+              <option value="custome_frame">Custom Frames</option>
               <option value="new">New Arrivals</option>
             </select>
           </li>

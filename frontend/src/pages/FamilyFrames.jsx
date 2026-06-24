@@ -5,7 +5,7 @@ import CollectionsNav from '../components/CollectionsNav';
 
 const API_URL = '/api';
 
-const GodFrames = () => {
+const FamilyFrames = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -17,8 +17,8 @@ const GodFrames = () => {
         const res = await fetch(`${API_URL}/products`);
         if (!res.ok) return;
         const allProducts = await res.json();
-        // Filter by God category
-        setProducts(allProducts.filter(p => p.category === 'God' || p.category === 'Gods'));
+        // Filter by Family category
+        setProducts(allProducts.filter(p => p.category === 'Family' || p.category === 'Families'));
       } catch (err) {
         console.error(err);
       } finally {
@@ -66,18 +66,17 @@ const GodFrames = () => {
       addToast('Removed from wishlist');
     }
     localStorage.setItem('vitthal_wishlist', JSON.stringify(wishlist));
-    // Optional refresh state
   };
 
   return (
     <>
       <div className="breadcrumbs" style={{ padding: '20px 20px', maxWidth: '1200px', margin: '0 auto' }}>
-        <Link to="/">Home &gt;</Link> God Frames
+        <Link to="/">Home &gt;</Link> Family Frames
       </div>
 
-      <div className="category-header" style={{ textAlign: 'center', padding: '40px 20px', background: 'linear-gradient(135deg, #fff5f0 0%, #fff 100%)', marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '2.5rem', color: '#333', marginBottom: '10px', fontWeight: 800 }}>Divine Collection</h1>
-        <p style={{ color: '#666', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>Bring peace and prosperity to your home with our exquisitely crafted God frames.</p>
+      <div className="category-header" style={{ textAlign: 'center', padding: '40px 20px', background: 'linear-gradient(135deg, #f4ebd9 0%, #fbf8f3 100%)', marginBottom: '40px' }}>
+        <h1 style={{ fontSize: '2.5rem', color: '#0b1325', marginBottom: '10px', fontWeight: 800 }}>Family Collection</h1>
+        <p style={{ color: '#141d30', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>Celebrate your family bonds with elegant frames that capture cherished moments and unite your loved ones.</p>
       </div>
 
       <CollectionsNav />
@@ -106,7 +105,7 @@ const GodFrames = () => {
                   <h4>{product.name}</h4>
                   <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{product.description}</p>
                   <div className="T-product-span">
-                    <span className="text-[#8a7560] text-sm">God Collection</span>
+                    <span className="text-[#8a7560] text-sm">Family Collection</span>
                     <span className="text-lg font-semibold">₹{product.price.toLocaleString()}</span>
                   </div>
                 </div>
@@ -121,4 +120,4 @@ const GodFrames = () => {
   );
 };
 
-export default GodFrames;
+export default FamilyFrames;

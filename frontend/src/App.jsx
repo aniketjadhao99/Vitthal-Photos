@@ -14,6 +14,9 @@ import GodFrames from './pages/GodFrames';
 import WarriorFrames from './pages/WarriorFrames';
 import NewArrivals from './pages/NewArrivals';
 import CustomFrame from './pages/CustomFrame';
+import CollageFrames from './pages/CollageFrames';
+import FamilyFrames from './pages/FamilyFrames';
+import KidsFrames from './pages/KidsFrames';
 import Auth from './pages/Auth';
 import AdminPanel from './pages/AdminPanel';
 import Search from './pages/Search';
@@ -43,6 +46,9 @@ const AppContent = () => {
           {/* Category Pages */}
           <Route path="/god" element={<GodFrames />} />
           <Route path="/warriors" element={<WarriorFrames />} />
+          <Route path="/collage" element={<CollageFrames />} />
+          <Route path="/family" element={<FamilyFrames />} />
+          <Route path="/kids" element={<KidsFrames />} />
           <Route path="/custom" element={<CustomFrame />} />
           <Route path="/new" element={<NewArrivals />} />
           <Route path="/search" element={<Search />} />
