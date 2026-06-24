@@ -57,6 +57,7 @@ router.post('/', async (req, res) => {
     totalPrice,
     shippingAddress,
     paymentMethod,
+    paymentId,
     userId,
     couponCode,
     discountAmount
@@ -64,6 +65,14 @@ router.post('/', async (req, res) => {
 
   if (!orderItems || orderItems.length === 0) {
     return res.status(400).json({ message: 'No order items' });
+  }
+
+  // Validate Razorpay payments must have paymentId
+  if (paymentMethod && paymentMethod !== 'Cash on Delivery' && !paymentId) {
+    console.warn(`⚠️  Attempted to create ${paymentMethod} order without paymentId - BLOCKED`);
+    return res.status(400).json({ 
+      message: `${paymentMethod} payment requires verified payment. Please complete payment first.` 
+    });
   }
 
   try {
