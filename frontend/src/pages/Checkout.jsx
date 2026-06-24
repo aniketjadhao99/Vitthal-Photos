@@ -56,12 +56,18 @@ const Checkout = () => {
       return;
     }
     
+    console.log('Form submitted with payment method:', form.payment);
+    
     // For COD, place order directly
     if (form.payment === 'cod') {
+      console.log('COD selected - proceeding with direct order');
       await placeOrderDirectly('COD');
-    } else {
-      // For card/UPI, use Razorpay
+    } else if (form.payment === 'card' || form.payment === 'upi') {
+      // For card/UPI, MUST use Razorpay - block any direct order creation
+      console.log('Payment method selected:', form.payment, '- opening Razorpay');
       await handleRazorpayPayment();
+    } else {
+      addToast('Please select a payment method', 'error');
     }
   };
 
@@ -69,32 +75,33 @@ const Checkout = () => {
   const handleRazorpayPayment = async () => {
     setIsPlacingOrder(true);
     try {
-      // Check Razorpay script is loaded
-      await new Promise((resolve, reject) => {
-        let retries = 0;
-        const checkRazorpay = () => {
-          if (window.Razorpay) {
-            console.log('✅ Razorpay script confirmed loaded');
-            resolve();
-          } else if (retries < 10) {
-            retries++;
-            setTimeout(checkRazorpay, 100);
-          } else {
-            reject(new Error('Razorpay script failed to load. Please refresh and try again.'));
-          }
-        };
-        checkRazorpay();
-      });
+      // CRITICAL: Check Razorpay script is loaded
+      console.log('Checking Razorpay availability...');
+      let razorpayReady = false;
+      
+      for (let i = 0; i < 20; i++) {
+        if (window.Razorpay) {
+          razorpayReady = true;
+          console.log('✅ Razorpay confirmed ready on attempt', i + 1);
+          break;
+        }
+        await new Promise(r => setTimeout(r, 100));
+      }
+
+      if (!razorpayReady) {
+        throw new Error('Razorpay payment script is not available. Please reload the page and try again.');
+      }
 
       // Step 1: Create Razorpay order
-      const amountInPaisa = Math.round(total * 100); // Convert to paisa
-      console.log('Creating order for amount:', total, 'paise:', amountInPaisa);
+      const amountInPaisa = Math.round(total * 100);
+      console.log('🔔 Creating Razorpay order...');
+      console.log('Amount:', total, 'INR |', amountInPaisa, 'paise');
       
       const createOrderResponse = await fetch(`${API_URL}/payment/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: total, // Send in rupees
+          amount: total,
           currency: 'INR',
           receipt: `receipt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         })
@@ -102,20 +109,22 @@ const Checkout = () => {
 
       if (!createOrderResponse.ok) {
         const errorData = await createOrderResponse.json();
-        throw new Error(errorData.message || 'Failed to create payment order');
+        throw new Error(`Server error: ${errorData.message || 'Failed to create payment order'}`);
       }
 
-      const { orderId, key } = await createOrderResponse.json();
-      console.log('✅ Payment order created:', orderId);
-
-      // Validate response
+      const responseData = await createOrderResponse.json();
+      const { orderId, key } = responseData;
+      
       if (!orderId || !key) {
-        throw new Error('Invalid order response from server');
+        console.error('Invalid response:', responseData);
+        throw new Error('Invalid response from payment server');
       }
+
+      console.log('✅ Razorpay order created:', orderId);
 
       // Step 2: Prepare Razorpay options
       const paymentMethod = form.payment === 'upi' ? 'upi' : 'card';
-      console.log('📱 Opening Razorpay modal for:', paymentMethod);
+      console.log('Method selected:', paymentMethod);
 
       const options = {
         key: key,
@@ -124,15 +133,11 @@ const Checkout = () => {
         name: 'Vitthal Photo Frames',
         description: `Order for ${form.firstName} ${form.lastName}`,
         order_id: orderId,
-        method: paymentMethod, // Restrict to selected method
+        method: paymentMethod,
         handler: async (response) => {
-          console.log('✅ Payment successful, verifying...');
-          console.log('Payment IDs:', {
-            payment: response.razorpay_payment_id,
-            order: response.razorpay_order_id
-          });
+          console.log('✅ Payment handler called');
+          console.log('Payment IDs:', response);
           
-          // Step 3: Verify payment signature
           try {
             const verifyResponse = await fetch(`${API_URL}/payment/verify`, {
               method: 'POST',
@@ -150,18 +155,15 @@ const Checkout = () => {
             }
 
             const verifyData = await verifyResponse.json();
-            if (verifyData.success) {
-              console.log('✅ Payment verified! Creating order...');
-              // Step 4: Payment verified, now place the order with paymentId
+            if (verifyData.success && verifyData.verified) {
+              console.log('✅ Payment verified!');
               await placeOrderDirectly('Razorpay', response.razorpay_payment_id);
             } else {
-              console.error('❌ Signature mismatch');
-              addToast('Payment verification failed. Please contact support.', 'error');
-              setIsPlacingOrder(false);
+              throw new Error('Payment signature verification failed');
             }
-          } catch (error) {
-            console.error('❌ Verification error:', error);
-            addToast('Payment verification failed: ' + error.message, 'error');
+          } catch (verifyError) {
+            console.error('❌ Verification failed:', verifyError);
+            addToast('Payment verification failed: ' + verifyError.message, 'error');
             setIsPlacingOrder(false);
           }
         },
@@ -170,30 +172,24 @@ const Checkout = () => {
           email: form.email,
           contact: form.phone
         },
-        theme: {
-          color: '#E8AF39'
-        },
+        theme: { color: '#E8AF39' },
         modal: {
           ondismiss: () => {
-            console.log('⚠️  User dismissed Razorpay modal');
-            addToast('Payment cancelled. Your cart is still available.', 'info');
+            console.log('❌ User dismissed payment modal');
+            addToast('Payment cancelled. Please try again.', 'warning');
             setIsPlacingOrder(false);
           }
         }
       };
 
-      // Step 3: Open the Razorpay modal
-      console.log('Creating Razorpay instance...');
-      const paymentObject = new window.Razorpay(options);
-      
-      console.log('🚀 OPENING RAZORPAY MODAL NOW...');
-      paymentObject.open();
-      console.log('Razorpay modal should be visible now');
+      // Step 3: Open Razorpay modal
+      console.log('🚀 Opening Razorpay modal...');
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
       
     } catch (error) {
-      console.error('❌ RAZORPAY ERROR:', error.message);
-      console.error('Stack:', error.stack);
-      addToast('Failed to open payment modal: ' + error.message, 'error');
+      console.error('❌ Fatal error:', error.message);
+      addToast('Cannot open payment modal: ' + error.message, 'error');
       setIsPlacingOrder(false);
     }
   };
@@ -201,12 +197,20 @@ const Checkout = () => {
   // Place order in database
   const placeOrderDirectly = async (paymentMethod, paymentId = null) => {
     try {
-      // For Razorpay/Card/UPI payments, paymentId is REQUIRED
-      if (paymentMethod !== 'COD' && !paymentId) {
-        addToast(`Error: ${paymentMethod} payment requires payment verification.`, 'error');
+      // CRITICAL VALIDATION: Razorpay/Card/UPI orders MUST have paymentId
+      if ((paymentMethod === 'Razorpay' || paymentMethod === 'Card' || paymentMethod === 'UPI') && !paymentId) {
+        const errorMsg = `${paymentMethod} payment requires payment ID. Please complete payment first.`;
+        console.error('❌', errorMsg);
+        addToast(errorMsg, 'error');
         setIsPlacingOrder(false);
         return;
       }
+
+      console.log('Creating order:', {
+        method: paymentMethod,
+        hasPaymentId: !!paymentId,
+        paymentId: paymentId ? '[REDACTED]' : 'NONE'
+      });
 
       const orderItems = cartItems.map(item => ({
         name: item.name,
@@ -250,14 +254,19 @@ const Checkout = () => {
         orderItems,
         totalPrice: subtotal,
         paymentMethod: finalPaymentMethod,
-        paymentId: paymentId || null, // Backend will validate this
+        paymentId: paymentId || null,
         shippingAddress: { address: form.address, city: form.city, postalCode: form.pincode, country: 'India', phone: form.phone },
         userId: user?._id || user?.id || null,
         couponCode: coupon?.code || null,
         discountAmount: coupon?.discount || 0
       };
 
-      console.log('Placing order with paymentId:', paymentId);
+      console.log('📤 Sending order to server...', {
+        total: orderData.totalPrice,
+        method: orderData.paymentMethod,
+        hasPaymentId: !!orderData.paymentId
+      });
+
       const token = localStorage.getItem('vitthal_token');
       const res = await fetch(`${API_URL}/orders`, {
         method: 'POST',
@@ -266,7 +275,8 @@ const Checkout = () => {
       });
 
       if (res.ok) {
-        console.log('✅ Order created successfully');
+        const createdOrder = await res.json();
+        console.log('✅ Order created successfully:', createdOrder._id || createdOrder.id);
         addToast(`Order placed via ${finalPaymentMethod}!`, 'success');
         localStorage.removeItem('vitthal_cart');
         localStorage.removeItem('vitthal_coupon');
@@ -275,12 +285,12 @@ const Checkout = () => {
         navigate('/order-success');
       } else {
         const err = await res.json();
-        console.error('❌ Order creation failed:', err);
+        console.error('❌ Server rejected order:', err);
         addToast(err.message || 'Order failed. Try again.', 'error');
         setIsPlacingOrder(false);
       }
     } catch (error) {
-      console.error('Order placement error:', error);
+      console.error('❌ Order placement error:', error.message);
       addToast('Error placing order: ' + error.message, 'error');
       setIsPlacingOrder(false);
     }
