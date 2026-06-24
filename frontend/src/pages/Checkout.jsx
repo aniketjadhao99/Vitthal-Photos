@@ -44,9 +44,12 @@ const Checkout = () => {
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     
-    console.log('=== FORM SUBMISSION ===');
+    console.log('════════════════════════════════════════');
+    console.log('📍 [FORM SUBMIT] CLICKED - Form submission initiated');
+    console.log('════════════════════════════════════════');
     console.log('Current payment method:', form.payment);
     console.log('isPlacingOrder state:', isPlacingOrder);
+    console.log('Timestamp:', new Date().toISOString());
     
     // Validate form
     if (!form.firstName || !form.lastName || !form.email || !form.phone || !form.address || !form.city || !form.pincode) {
@@ -183,12 +186,17 @@ const Checkout = () => {
         order_id: orderId,
         method: paymentMethod,
         handler: async (response) => {
-          console.log('✅ [Payment Handler] Payment handler callback triggered');
-          console.log('🔐 Received payment IDs:', {
-            payment_id: response.razorpay_payment_id ? 'present' : 'MISSING',
-            order_id: response.razorpay_order_id ? 'present' : 'MISSING',
-            signature: response.razorpay_signature ? 'present' : 'MISSING'
-          });
+          console.log('════════════════════════════════════════');
+          console.log('✅ [Payment Handler] CALLBACK TRIGGERED!');
+          console.log('════════════════════════════════════════');
+          console.log('🔐 Received payment response object');
+          console.log('Payment ID present:', !!response.razorpay_payment_id);
+          console.log('Order ID present:', !!response.razorpay_order_id);
+          console.log('Signature present:', !!response.razorpay_signature);
+          
+          if (response.razorpay_payment_id) {
+            console.log('💳 Payment ID:', response.razorpay_payment_id.substring(0, 10) + '...');
+          }
           
           try {
             console.log('🔍 [Verification] Verifying payment signature...');
@@ -251,15 +259,26 @@ const Checkout = () => {
 
       // Step 3: Open Razorpay modal
       console.log('🎯 [Modal] Creating Razorpay instance...');
+      let razorpay = null;
       try {
-        const razorpay = new window.Razorpay(options);
-        console.log('✅ [Modal] Razorpay instance created');
-        console.log('🚀 [Modal] Opening payment modal...');
-        razorpay.open();
-        console.log('✅ [Modal] Modal opened');
+        razorpay = new window.Razorpay(options);
+        console.log('✅ [Modal] Razorpay instance created successfully');
+        console.log('🚀 [Modal] Calling razorpay.open()...');
+        
+        // Try to open the modal
+        const openResult = razorpay.open();
+        console.log('✅ [Modal] razorpay.open() returned:', openResult);
+        console.log('✅ [Modal] Payment modal should now be visible to user');
+        
+        // Don't reset isPlacingOrder here - wait for handler callback
+        // The payment handler will call placeOrderDirectly when payment completes
       } catch (modalError) {
         const errMsg = `Failed to open payment modal: ${modalError.message}`;
-        console.error('❌ [Modal]', errMsg);
+        console.error('❌ [Modal] Exception when opening modal');
+        console.error('❌ [Modal] Error name:', modalError.name);
+        console.error('❌ [Modal] Error message:', modalError.message);
+        console.error('❌ [Modal] Error stack:', modalError.stack);
+        console.error('❌ [Modal] Full error object:', modalError);
         addToast(errMsg, 'error');
         setIsPlacingOrder(false);
         return;
