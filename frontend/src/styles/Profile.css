@@ -23,6 +23,7 @@
   align-items: start;
   min-width: 0;
   width: 100%;
+  max-width: 100%;
 }
 
 .profile-card {
@@ -33,6 +34,7 @@
   min-width: 0;
   overflow-wrap: anywhere;
   box-sizing: border-box;
+  width: 100%;
 }
 
 .profile-order-details-grid {
@@ -74,6 +76,11 @@
   .profile-order-details-grid,
   .profile-address-form-grid {
     width: 100%;
+    max-width: 100%;
+  }
+
+  .profile-card {
+    padding: 24px;
   }
 }
 
@@ -113,6 +120,7 @@
   .profile-card,
   .profile-main-grid {
     width: 100%;
+    max-width: 100%;
     min-width: 0;
   }
 
@@ -121,6 +129,14 @@
     max-width: 100%;
     margin: 0 10px;
     padding: 20px;
+  }
+
+  .profile-card {
+    border-radius: 18px;
+  }
+
+  .profile-card h2 {
+    margin-bottom: 18px;
   }
 }
 
