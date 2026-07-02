@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
+import '../styles/Profile.css';
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -203,8 +204,8 @@ const Profile = () => {
         <Link to="/">Home &gt;</Link> My Profile
       </div>
 
-      <div style={{ maxWidth: '1000px', margin: '40px auto', padding: '0 20px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+      <div className="profile-page-container">
+        <div className="profile-intro">
           <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'linear-gradient(135deg, #fa873b, #e0702b)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '2.5rem', fontWeight: 800, color: 'white', boxShadow: '0 10px 30px rgba(250, 135, 59, 0.3)' }}>
             {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
           </div>
@@ -212,7 +213,7 @@ const Profile = () => {
           <p style={{ color: '#666', fontSize: '1.1rem' }}>Manage your account and track your orders</p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' }}>
+        <div className="profile-stat-grid">
           <Link to="/wishlist" style={{ background: 'white', borderRadius: '16px', padding: '25px', textAlign: 'center', boxShadow: '0 5px 20px rgba(0,0,0,0.05)', textDecoration: 'none', color: '#333', transition: 'transform 0.3s' }}>
             <i className="bi bi-heart" style={{ fontSize: '2rem', color: '#fa873b', marginBottom: '12px', display: 'block' }}></i>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '5px' }}>My Wishlist</h3>
@@ -230,10 +231,10 @@ const Profile = () => {
           </a>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '30px', alignItems: 'start' }}>
+        <div className="profile-main-grid">
             
             {/* Order History */}
-            <div id="order-history" style={{ background: 'white', borderRadius: '20px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)', padding: '30px' }}>
+            <div id="order-history" className="profile-card">
                 <h2 style={{ fontSize: '1.4rem', color: '#333', marginBottom: '25px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <i className="bi bi-clock-history" style={{ color: '#fa873b', fontSize: '1.3rem' }}></i> Order History
                 </h2>
@@ -284,7 +285,7 @@ const Profile = () => {
             </div>
 
             {/* Profile Settings */}
-            <div style={{ background: 'white', borderRadius: '20px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)', padding: '30px' }}>
+            <div className="profile-card">
                 <h2 style={{ fontSize: '1.4rem', color: '#333', marginBottom: '25px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <i className="bi bi-person-circle" style={{ color: '#fa873b', fontSize: '1.3rem' }}></i> Profile Settings
                 </h2>
@@ -308,7 +309,7 @@ const Profile = () => {
                   </button>
                 </div>
                 {/* Addresses Section */}
-            <div style={{ background: 'white', borderRadius: '20px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)', padding: '30px', marginTop: '30px' }}>
+            <div className="profile-card" style={{ marginTop: '30px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                 <h2 style={{ fontSize: '1.4rem', color: '#333', margin: 0, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <i className="bi bi-geo-alt" style={{ color: '#fa873b', fontSize: '1.3rem' }}></i> Saved Addresses
@@ -341,13 +342,13 @@ const Profile = () => {
       {/* Order Details Modal */}
       {showModal && selectedOrder && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '25px', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '40px', position: 'relative' }}>
+          <div className="profile-modal" style={{ background: 'white', borderRadius: '25px', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '40px', position: 'relative' }}>
             <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: '#f5f5f5', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', fontSize: '1.2rem' }}>&times;</button>
             
             <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '5px' }}>Order Details</h2>
             <p style={{ color: '#888', marginBottom: '30px' }}>Order ID: #{selectedOrder._id.toUpperCase()}</p>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', background: '#fcfcfc', padding: '25px', borderRadius: '15px', marginBottom: '30px', border: '1px solid #f0f0f0' }}>
+            <div className="profile-order-details-grid">
               <div>
                 <span style={{ display: 'block', fontSize: '0.8rem', color: '#999', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5px' }}>Status</span>
                 {badge(selectedOrder.status)}
@@ -398,16 +399,16 @@ const Profile = () => {
       {/* Address Form Modal */}
       {showAddressForm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '500px', padding: '30px', position: 'relative' }}>
+          <div className="profile-modal-small" style={{ background: 'white', borderRadius: '20px', width: '100%', padding: '30px', position: 'relative' }}>
             <button onClick={() => setShowAddressForm(false)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
             <h2 style={{ marginBottom: '20px' }}>{addressForm.id ? 'Edit Address' : 'Add New Address'}</h2>
             <form onSubmit={handleSaveAddress}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+              <div className="profile-address-form-grid">
                 <div><label>Name</label><input required type="text" value={addressForm.name} onChange={e => setAddressForm({...addressForm, name: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} /></div>
                 <div><label>Phone</label><input required type="text" value={addressForm.phone} onChange={e => setAddressForm({...addressForm, phone: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} /></div>
               </div>
               <div style={{ marginBottom: '15px' }}><label>Address</label><textarea required rows="3" value={addressForm.address} onChange={e => setAddressForm({...addressForm, address: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} /></div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+              <div className="profile-address-form-grid">
                 <div><label>City</label><input required type="text" value={addressForm.city} onChange={e => setAddressForm({...addressForm, city: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} /></div>
                 <div><label>State</label><input required type="text" value={addressForm.state} onChange={e => setAddressForm({...addressForm, state: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} /></div>
               </div>
@@ -424,7 +425,7 @@ const Profile = () => {
       {/* Return Request Modal */}
       {showReturnModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '500px', padding: '30px', position: 'relative' }}>
+          <div className="profile-modal-small" style={{ background: 'white', borderRadius: '20px', width: '100%', padding: '30px', position: 'relative' }}>
             <button onClick={() => setShowReturnModal(false)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
             <h2 style={{ marginBottom: '10px' }}>Request Return</h2>
             <p style={{ color: '#666', marginBottom: '20px', fontSize: '0.9rem' }}>You are requesting a return for Order #{selectedOrder?._id?.slice(-8).toUpperCase()}</p>
