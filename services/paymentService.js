@@ -2,9 +2,16 @@ const Razorpay = require('razorpay');
 
 // CRITICAL: Initialize Razorpay ONLY with environment variables to prevent startup failures
 // Never attempt database queries during module load
+const keyId = process.env.RAZORPAY_KEY_ID;
+const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+if (!keyId || !keySecret) {
+  console.error('❌ Razorpay credentials are missing. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.');
+}
+
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_default',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || 'default_secret'
+  key_id: keyId || 'rzp_test_default',
+  key_secret: keySecret || 'default_secret'
 });
 
 console.log('✅ Razorpay initialized with environment variables');
@@ -12,12 +19,26 @@ console.log('✅ Razorpay initialized with environment variables');
 // Create payment order
 const createPaymentOrder = async (amount, currency = 'INR', receipt) => {
   try {
+    if (!keyId || !keySecret) {
+      const message = 'Missing Razorpay credentials';
+      console.error('❌', message);
+      return { success: false, error: message };
+    }
+
+    if (!amount || typeof amount !== 'number' || amount <= 0) {
+      const message = 'Invalid amount for Razorpay order';
+      console.error('❌', message, 'amount=', amount);
+      return { success: false, error: message };
+    }
+
     const options = {
-      amount: amount * 100, // Razorpay expects amount in paisa
+      amount: Math.round(amount * 100), // Razorpay expects amount in paisa
       currency,
       receipt,
       payment_capture: 1 // Auto capture payment
     };
+
+    console.log('🔔 [PaymentService] Creating Razorpay order with options:', options);
 
     const order = await razorpay.orders.create(options);
     
@@ -26,13 +47,13 @@ const createPaymentOrder = async (amount, currency = 'INR', receipt) => {
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      key: process.env.RAZORPAY_KEY_ID
+      key: keyId
     };
   } catch (error) {
-    console.error('❌ Error creating payment order:', error.message);
+    console.error('❌ Error creating payment order:', error.message, error);
     return {
       success: false,
-      error: error.message
+      error: error.message || 'Unknown Razorpay error'
     };
   }
 };

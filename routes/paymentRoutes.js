@@ -16,10 +16,12 @@ router.post('/create-order', async (req, res) => {
     if (orderResult.success) {
       res.json({ orderId: orderResult.orderId, amount: orderResult.amount, currency: orderResult.currency, key: orderResult.key });
     } else {
-      res.status(500).json({ message: 'Failed to create payment order' });
+      console.error('❌ [Payment Route] Order creation failed:', orderResult.error);
+      res.status(500).json({ message: 'Failed to create payment order', error: orderResult.error });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ [Payment Route] Unexpected server error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 

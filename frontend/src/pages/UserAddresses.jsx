@@ -27,13 +27,14 @@ export default function UserAddresses() {
   const fetchAddresses = async () => {
     try {
       setLoading(true);
+      const token = localStorage.getItem('vitthal_token');
       const response = await fetch('/api/addresses', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
       const data = await response.json();
-      setAddresses(data.data || []);
+      setAddresses(Array.isArray(data) ? data : data.data || []);
     } catch (error) {
       showToast('Failed to load addresses', 'error');
     } finally {
@@ -57,11 +58,12 @@ export default function UserAddresses() {
       const url = editingId ? `/api/addresses/${editingId}` : '/api/addresses';
       const method = editingId ? 'PUT' : 'POST';
 
+      const token = localStorage.getItem('vitthal_token');
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       });
@@ -89,10 +91,11 @@ export default function UserAddresses() {
 
     try {
       setLoading(true);
+      const token = localStorage.getItem('vitthal_token');
       const response = await fetch(`/api/addresses/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -110,11 +113,12 @@ export default function UserAddresses() {
   const handleSetDefault = async (id) => {
     try {
       setLoading(true);
+      const token = localStorage.getItem('vitthal_token');
       const response = await fetch(`/api/addresses/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ isDefault: true }),
       });
