@@ -442,7 +442,14 @@ const CustomFrame = () => {
                           className={`frame-option ${frameStyle === frame.id ? 'selected' : ''}`}
                           onClick={() => setFrameStyle(frame.id)}
                         >
-                          <div className="frame-preview-thumb" style={{ backgroundImage: `url(${frame.image})` }}>
+                          <div className="frame-preview-thumb">
+                            <img
+                              src={normalizeImageUrl(frame.image) || '/assets/images/logo.png'}
+                              alt={frame.name}
+                              loading="lazy"
+                              decoding="async"
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            />
                             {frameStyle === frame.id && <div className="selection-badge"><i className="bi bi-check2"></i></div>}
                           </div>
                           <p className="frame-name">{frame.name}</p>

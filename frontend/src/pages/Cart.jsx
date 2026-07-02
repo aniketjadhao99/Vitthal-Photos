@@ -106,7 +106,7 @@ const Cart = () => {
                     <tr key={index}>
                       <td>
                         <div className="cart-product">
-                          <img src={normalizeImageUrl(item.image)} alt={item.name} />
+                          <img src={normalizeImageUrl(item.image)} alt={item.name} width="60" height="60" loading="lazy" decoding="async" />
                           <div>
                             <h4 style={{ margin: 0 }}>{item.name}</h4>
                             <small>Size: {item.size || 'Standard'}</small>
@@ -141,7 +141,7 @@ const Cart = () => {
                     <i className="bi bi-trash"></i>
                   </button>
                   <div className="cart-mobile-product-info">
-                    <img src={normalizeImageUrl(item.image)} alt={item.name} />
+                    <img src={normalizeImageUrl(item.image)} alt={item.name} width="70" height="70" loading="lazy" decoding="async" />
                     <div className="cart-mobile-details">
                       <h4>{item.name}</h4>
                       <small>Size: {item.size || 'Standard'}</small>

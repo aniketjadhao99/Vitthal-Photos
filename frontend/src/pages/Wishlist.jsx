@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
+import { normalizeImageUrl } from '../utils/imageUtils';
 
 const Wishlist = () => {
   const [wishlistItems, setWishlistItems] = useState([]);
@@ -53,7 +54,15 @@ const Wishlist = () => {
             {wishlistItems.map((item, index) => (
               <div className="T-product" key={index} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <div className="img-cover" onClick={() => navigate(`/product/${item._id}`)}>
-                  <div className="img-1" style={{ backgroundImage: `url('${item.image}')` }}></div>
+                  <img
+                    className="img-1"
+                    width="360"
+                    height="450"
+                    src={normalizeImageUrl(item.image) || '/assets/images/logo.png'}
+                    alt={item.name}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <button className="fev-btn liked" onClick={(e) => { e.stopPropagation(); removeItem(index); }} style={{ display: 'flex', opacity: 1, background: '#f5e3d8' }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-heart-fill" viewBox="0 0 16 16" style={{ color: '#fa873b' }}>
                       <path fillRule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z" />
