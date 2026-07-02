@@ -14,6 +14,9 @@ const generateToken = (id) => {
   }
   return jwt.sign({ id }, secret, {
     expiresIn: '30d',
+    algorithm: 'HS256',
+    issuer: 'vitthal-photo-frames',
+    audience: 'web-client',
   });
 };
 

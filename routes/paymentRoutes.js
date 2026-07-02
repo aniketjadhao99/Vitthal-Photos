@@ -29,14 +29,22 @@ router.post('/create-order', async (req, res) => {
 router.post('/verify', async (req, res) => {
   try {
     const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+    console.log('🔍 [Payment Verify Route] payload:', {
+      razorpay_payment_id,
+      razorpay_order_id,
+      razorpay_signature
+    });
+
     const verificationResult = await verifyPayment(razorpay_payment_id, razorpay_order_id, razorpay_signature);
 
     if (verificationResult.success && verificationResult.verified) {
-      res.json({ success: true, message: 'Payment verified', paymentId: razorpay_payment_id });
+      res.json({ success: true, verified: true, message: 'Payment verified', paymentId: razorpay_payment_id });
     } else {
-      res.status(400).json({ success: false, message: 'Verification failed' });
+      console.warn('❌ [Payment Verify Route] verification failed:', verificationResult.error);
+      res.status(400).json({ success: false, verified: false, message: verificationResult.error || 'Verification failed' });
     }
   } catch (error) {
+    console.error('❌ [Payment Verify Route] unexpected error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

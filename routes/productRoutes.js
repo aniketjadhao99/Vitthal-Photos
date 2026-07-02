@@ -1,9 +1,34 @@
 const express = require('express');
 const router = express.Router();
 const { Product } = require('../lib/db');
-const { s3 } = require('../middleware/uploadMiddleware');
-const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { protect } = require('../middleware/authMiddleware');
+
+const awsBucketName = process.env.AWS_BUCKET_NAME;
+
+const normalizeImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return url;
+  if (!url.startsWith('http')) return url;
+  const isAwsImage = url.includes('amazonaws.com') && (awsBucketName ? url.includes(awsBucketName) : true);
+  if (isAwsImage) {
+    return `/api/upload/proxy?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+};
+
+const normalizeProduct = (product) => {
+  if (!product) return product;
+  const normalized = { ...product };
+  if (Array.isArray(normalized.images)) {
+    normalized.images = normalized.images.map(normalizeImageUrl);
+  }
+  if (normalized.image) {
+    normalized.image = normalizeImageUrl(normalized.image);
+  }
+  if (normalized.thumbnail) {
+    normalized.thumbnail = normalizeImageUrl(normalized.thumbnail);
+  }
+  return normalized;
+};
 
 // Escape user input before using in RegExp to prevent ReDoS and unintended matches
 const escapeRegex = (s) => {
@@ -15,18 +40,21 @@ router.get('/', async (req, res) => {
   try {
     const products = await Product.find().sort({ createdAt: -1 });
     // Map id to _id for frontend compatibility
-    const mappedProducts = products.map(p => ({ 
-      ...p.toObject(), 
-      _id: p._id.toString(), 
-      price: Number(p.basePrice),
-      basePrice: Number(p.basePrice)
-    }));
+    const mappedProducts = products.map(p => {
+      const product = {
+        ...p.toObject(),
+        _id: p._id.toString(),
+        price: Number(p.basePrice),
+        basePrice: Number(p.basePrice)
+      };
+      return normalizeProduct(product);
+    });
     res.json(mappedProducts);
   } catch (error) {
     console.error('⚠️ MongoDB products query failed, using static product catalog fallback:', error.message);
     try {
       const staticProducts = require('../Data/products');
-      const mapped = staticProducts.map((p, idx) => ({
+      const mapped = staticProducts.map((p, idx) => normalizeProduct({
         ...p,
         _id: `static-product-${idx}`,
         price: Number(p.basePrice),
@@ -55,7 +83,7 @@ router.get('/search/:query', async (req, res) => {
         { description: regex }
       ]
     });
-    const mappedProducts = products.map(p => ({ ...p.toObject(), _id: p._id.toString(), price: p.basePrice }));
+    const mappedProducts = products.map(p => normalizeProduct({ ...p.toObject(), _id: p._id.toString(), price: p.basePrice }));
     res.json(mappedProducts);
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
@@ -68,7 +96,7 @@ router.get('/search/:query', async (req, res) => {
 router.get('/trending', async (req, res) => {
   try {
     const products = await Product.find().sort({ salesCount: -1 }).limit(7);
-    const mappedProducts = products.map(p => ({ ...p.toObject(), _id: p._id.toString(), price: p.basePrice }));
+    const mappedProducts = products.map(p => normalizeProduct({ ...p.toObject(), _id: p._id.toString(), price: p.basePrice }));
     res.json(mappedProducts);
   } catch (error) {
     console.error('⚠️ MongoDB trending query failed, using static product fallback:', error.message);
@@ -128,7 +156,7 @@ router.get('/filter', async (req, res) => {
       Product.countDocuments(where)
     ]);
 
-    const mapped = products.map(p => ({ ...p.toObject(), _id: p._id.toString(), price: p.basePrice }));
+    const mapped = products.map(p => normalizeProduct({ ...p.toObject(), _id: p._id.toString(), price: p.basePrice }));
     res.json({ products: mapped, total, count: products.length, skip, limit });
   } catch (error) {
     console.error('⚠️ MongoDB filter query failed, using static product catalog fallback:', error.message);
@@ -150,7 +178,7 @@ router.get('/filter', async (req, res) => {
         filtered = filtered.filter(p => regex.test(p.name) || regex.test(p.description));
       }
       
-      const mapped = filtered.map((p, idx) => ({
+      const mapped = filtered.map((p, idx) => normalizeProduct({
         ...p,
         _id: `static-product-${idx}`,
         price: Number(p.basePrice),
@@ -168,12 +196,12 @@ router.get('/:id', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (product) {
-      res.json({ 
+      res.json(normalizeProduct({ 
         ...product.toObject(), 
         _id: product._id.toString(), 
         price: Number(product.basePrice),
         basePrice: Number(product.basePrice)
-      });
+      }));
     } else {
       // Check static fallback products
       const staticProducts = require('../Data/products');
@@ -210,14 +238,26 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-const { upload } = require('../middleware/uploadMiddleware');
+const { upload, storeFileInMongo } = require('../middleware/uploadMiddleware');
 
-// Helper: try multer upload, but if S3 fails/no file, continue with req.body
+// Helper: try multer upload, but if MongoDB storage fails/no file, continue with req.body
 const tryUpload = (req, res, next) => {
-  upload.single('image')(req, res, (err) => {
+  upload.single('image')(req, res, async (err) => {
     if (err) {
       console.warn('Upload middleware warning (non-fatal):', err.message);
     }
+
+    if (req.file) {
+      try {
+        const stored = await storeFileInMongo(req.file);
+        req.file.location = `/api/upload/${stored.id}`;
+        req.file.key = stored.id;
+        req.file.fileId = stored.id;
+      } catch (error) {
+        console.error('MongoDB image storage failed:', error.message);
+      }
+    }
+
     next();
   });
 };
@@ -332,16 +372,17 @@ router.delete('/:id', protect, async (req, res) => {
     const product = await Product.findById(req.params.id);
     
     if (product) {
-      // Delete images from S3 if they are S3 URLs
       if (product.images && product.images.length > 0) {
         for (const imgUrl of product.images) {
-          if (imgUrl.includes('amazonaws.com')) {
-            try {
-              const bucketName = process.env.AWS_BUCKET_NAME;
-              const key = new URL(imgUrl).pathname.substring(1);
-              await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: key }));
-            } catch (s3Error) {
-              console.error('Error deleting S3 object:', s3Error);
+          if (typeof imgUrl === 'string' && imgUrl.includes('/api/upload/')) {
+            const match = imgUrl.match(/\/api\/upload\/([^/?#]+)/);
+            if (match && match[1]) {
+              try {
+                const { deleteFileFromMongo } = require('../middleware/uploadMiddleware');
+                await deleteFileFromMongo(match[1]);
+              } catch (deleteError) {
+                console.error('Error deleting MongoDB image:', deleteError);
+              }
             }
           }
         }

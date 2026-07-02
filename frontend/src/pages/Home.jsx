@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
+import { normalizeImageUrl } from '../utils/imageUtils';
 
 const API_URL = '/api'; // Use proxy or env var in real app
 
@@ -12,21 +13,18 @@ const Home = () => {
   const [trendingProducts, setTrendingProducts] = useState([]);
 
   useEffect(() => {
-    // Load collection images from database
+    const controller = new AbortController();
+
     const loadData = async () => {
       try {
-        const res = await fetch(`${API_URL}/products`);
+        const res = await fetch(`${API_URL}/products/trending`, { signal: controller.signal });
         if (!res.ok) return;
         const products = await res.json();
 
         const usedImages = new Set();
         const getProxyUrl = (url) => {
           if (!url) return null;
-          if (url.startsWith('https://') && url.includes('s3')) {
-            return `${API_URL}/upload/proxy?url=${encodeURIComponent(url)}`;
-          }
-          if (url.startsWith('http')) return url;
-          return null;
+          return normalizeImageUrl(url);
         };
 
         const findUniqueImage = (categories) => {
@@ -56,17 +54,19 @@ const Home = () => {
           custom: customImg || '/assets/images/logo.png'
         });
 
-        // Setup trending products (taking first 4 as an example)
         if (products.length > 0) {
-            setTrendingProducts(products.slice(0, 8));
+          setTrendingProducts(products.slice(0, 6));
         }
 
       } catch (err) {
-        console.error('Error loading data:', err);
+        if (err.name !== 'AbortError') {
+          console.error('Error loading data:', err);
+        }
       }
     };
 
     loadData();
+    return () => controller.abort();
   }, []);
 
   const addToCart = (product) => {
@@ -205,19 +205,19 @@ const Home = () => {
         <div className="collection-grid" id="collection-grid">
           <div className="collection" onClick={() => navigate('/god')} style={{ cursor: 'pointer' }}>
             <div className="collection-item">
-              <img src={collectionImages.god || "/assets/images/logo.png"} alt="God Frames" />
+              <img src={collectionImages.god || "/assets/images/logo.png"} alt="God Frames" loading="lazy" decoding="async" />
               <div className="collection-label" style={{ position: 'absolute', bottom: '20px', left: '20px', background: 'rgba(255,255,255,0.95)', padding: '10px 22px', borderRadius: '10px', fontWeight: 700, color: '#333', fontSize: '1rem', zIndex: 5, boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>God Frames</div>
             </div>
           </div>
           <div className="collection" onClick={() => navigate('/warriors')} style={{ cursor: 'pointer' }}>
             <div className="collection-item">
-              <img src={collectionImages.warriors || "/assets/images/logo.png"} alt="Warrior Frames" />
+              <img src={collectionImages.warriors || "/assets/images/logo.png"} alt="Warrior Frames" loading="lazy" decoding="async" />
               <div className="collection-label" style={{ position: 'absolute', bottom: '20px', left: '20px', background: 'rgba(255,255,255,0.95)', padding: '10px 22px', borderRadius: '10px', fontWeight: 700, color: '#333', fontSize: '1rem', zIndex: 5, boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Warrior Frames</div>
             </div>
           </div>
           <div className="collection" onClick={() => navigate('/custom')} style={{ cursor: 'pointer' }}>
             <div className="collection-item">
-              <img src={collectionImages.custom || "/assets/images/logo.png"} alt="Custom Frames" />
+              <img src={collectionImages.custom || "/assets/images/logo.png"} alt="Custom Frames" loading="lazy" decoding="async" />
               <div className="collection-label" style={{ position: 'absolute', bottom: '20px', left: '20px', background: 'rgba(255,255,255,0.95)', padding: '10px 22px', borderRadius: '10px', fontWeight: 700, color: '#333', fontSize: '1rem', zIndex: 5, boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Custom Frames</div>
             </div>
           </div>
@@ -248,7 +248,13 @@ const Home = () => {
             {trendingProducts.length > 0 ? trendingProducts.map(product => (
                 <div className="T-product" key={product._id}>
                   <div className="img-cover" onClick={() => navigate(`/product/${product._id}`)}>
-                    <div className="img-1" style={{ backgroundImage: `url('${product.images?.[0] || 'https://lh3.googleusercontent.com/aida-public/AB6AXuA3DgY-zNs72yCHVJFYJAkK0SSbL9NOORmRV8YV8irhZD5e11LwGKbgL6G1APl9megiA8xN6EZ6BxUiSyKX7E2lNpqrpM2lryaHqmFNUBlXrpLZSxzj4wx34QcEhnhye79ySSbxfrslcVe7qAxIQCGWK9K2u1wVjoPEQO1oHCJxF_nIrA4eyVtcvgwyS_2PyBZTk-2Xb9Wwq3hyHNayHROxabcMs_rrrMgJ7tXZErV1lmEaV9KTJnN_EeiJB1dwpJbrPW3UrLsG-Bh7'}')` }}></div>
+                    <img
+                      className="img-1"
+                      src={normalizeImageUrl(product.images?.[0]) || '/assets/images/logo.png'}
+                      alt={product.name}
+                      loading="lazy"
+                      decoding="async"
+                    />
                     <button className="fev-btn" onClick={(e) => { e.stopPropagation(); toggleWishlist(product); }}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-heart" viewBox="0 0 16 16">
                         <path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143q.09.083.176.171a3 3 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15" />
@@ -274,7 +280,7 @@ const Home = () => {
               [1,2,3,4].map(i => (
                 <div className="T-product" key={i}>
                   <div className="img-cover">
-                    <div className="img-1" style={{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuA3DgY-zNs72yCHVJFYJAkK0SSbL9NOORmRV8YV8irhZD5e11LwGKbgL6G1APl9megiA8xN6EZ6BxUiSyKX7E2lNpqrpM2lryaHqmFNUBlXrpLZSxzj4wx34QcEhnhye79ySSbxfrslcVe7qAxIQCGWK9K2u1wVjoPEQO1oHCJxF_nIrA4eyVtcvgwyS_2PyBZTk-2Xb9Wwq3hyHNayHROxabcMs_rrrMgJ7tXZErV1lmEaV9KTJnN_EeiJB1dwpJbrPW3UrLsG-Bh7')` }}></div>
+                    <img className="img-1" src="/assets/images/logo.png" alt="Featured frame" loading="lazy" decoding="async" />
                     <button className="fev-btn">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-heart" viewBox="0 0 16 16">
                         <path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143q.09.083.176.171a3 3 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15" />

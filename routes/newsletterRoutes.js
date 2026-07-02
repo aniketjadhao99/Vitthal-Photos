@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const { protect } = require('../middleware/authMiddleware');
+const { requireAdmin } = require('../middleware/adminMiddleware');
 const { sendEmail } = require('../services/emailService');
 
 // @desc    Subscribe to newsletter
@@ -11,8 +12,12 @@ router.post('/subscribe', async (req, res) => {
   try {
     const { email } = req.body;
 
-    if (!email || !email.includes('@')) {
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
       return res.status(400).json({ message: 'Valid email is required' });
+    }
+
+    if (email.length > 254) {
+      return res.status(413).json({ message: 'Email too long' });
     }
 
     // Check if already subscribed
@@ -60,11 +65,8 @@ router.post('/subscribe', async (req, res) => {
 // @desc    Get all subscribers (Admin only)
 // @route   GET /api/newsletter
 // @access  Private - Admin
-router.get('/', protect, async (req, res) => {
+router.get('/', protect, requireAdmin, async (req, res) => {
   try {
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
 
     const subscribers = await prisma.newsletterSubscriber.findMany({
       orderBy: { createdAt: 'desc' }
@@ -124,11 +126,8 @@ router.post('/unsubscribe', async (req, res) => {
 // @desc    Send newsletter to all subscribers (Admin only)
 // @route   POST /api/newsletter/send
 // @access  Private - Admin
-router.post('/send', protect, async (req, res) => {
+router.post('/send', protect, requireAdmin, async (req, res) => {
   try {
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
 
     const { subject, message, template } = req.body;
 
@@ -174,11 +173,8 @@ router.post('/send', protect, async (req, res) => {
 // @desc    Delete subscriber (Admin only)
 // @route   DELETE /api/newsletter/:email
 // @access  Private - Admin
-router.delete('/:email', protect, async (req, res) => {
+router.delete('/:email', protect, requireAdmin, async (req, res) => {
   try {
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
 
     await prisma.newsletterSubscriber.delete({
       where: { email: req.params.email }

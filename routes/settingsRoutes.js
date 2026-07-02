@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
+const { protect } = require('../middleware/authMiddleware');
+const { requireAdmin } = require('../middleware/adminMiddleware');
 
 // @desc    Get site settings
 // @route   GET /api/settings
@@ -18,7 +20,7 @@ router.get('/', async (req, res) => {
 
 // @desc    Update site settings
 // @route   PUT /api/settings
-router.put('/', async (req, res) => {
+router.put('/', protect, requireAdmin, async (req, res) => {
     try {
         let settings = await prisma.settings.findFirst();
         

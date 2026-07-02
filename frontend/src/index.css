@@ -5,9 +5,48 @@
     box-sizing: border-box;
 }
 
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+}
+
 body {
     overflow-x: hidden;
     background-color: #faf9f9;
+    min-height: 100vh;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+main {
+    width: 100%;
+    overflow-x: hidden;
+}
+
+.app-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-wrapper > main {
+    flex: 1;
+}
+
+.route-loading {
+    min-height: 40vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    color: #7a5a3d;
+    font-weight: 600;
 }
 
 /* --- Toast Notification System --- */
@@ -1671,11 +1710,11 @@ input:focus {
     }
 
     .hero-content h1 {
-        font-size: 2.2rem;
+        font-size: clamp(1.8rem, 6vw, 2.4rem);
     }
 
     .hero-content p {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         margin: 0 auto 20px;
     }
 
@@ -1708,8 +1747,31 @@ input:focus {
         gap: 15px;
     }
 
-    .Collection {
-        width: 95%;
+    .Collections-top,
+    .Top-Trending {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .CTA-input {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .CTA-input input {
+        width: 100%;
+        margin-right: 0;
+    }
+
+    .CTA-section h2 {
+        font-size: clamp(1.6rem, 5vw, 2.2rem);
+    }
+
+    .CTA-section p {
+        font-size: 1rem;
     }
 
     .Collection {
@@ -1753,6 +1815,13 @@ input:focus {
 
     .Board {
         grid-template-columns: 1fr;
+    }
+
+    .btn1,
+    .btn2,
+    .subscribe-btn {
+        width: 100%;
+        margin: 0;
     }
 }
 
@@ -2165,7 +2234,7 @@ input:focus {
 
 /* About Us & Contact Styles */
 .about-hero {
-    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('./assets/images/ready frames.png');
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/assets/images/logo.png');
     background-size: cover;
     background-position: center;
     color: white;

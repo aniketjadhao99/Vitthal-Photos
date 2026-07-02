@@ -45,6 +45,8 @@ const Auth = () => {
       // Successful login/registration
       localStorage.setItem('vitthal_token', data.token);
       localStorage.setItem('vitthal_user', JSON.stringify({ 
+        _id: data._id || data.id,
+        id: data._id || data.id,
         name: data.name, 
         email: data.email,
         isAdmin: data.isAdmin,

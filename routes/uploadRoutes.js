@@ -1,67 +1,50 @@
 const express = require('express');
 const router = express.Router();
-const { upload, s3 } = require('../middleware/uploadMiddleware');
-const { GetObjectCommand } = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const { protect } = require('../middleware/authMiddleware');
+const { requireAdmin } = require('../middleware/adminMiddleware');
+const { upload, storeFileInMongo, getFileFromMongo } = require('../middleware/uploadMiddleware');
 
-// User sends POST to /api/upload -> We send back the AWS URL
-router.post('/', upload.single('image'), (req, res) => {
-  if (!req.file) return res.status(400).send('No file uploaded');
-  res.send({
-    message: 'Image uploaded successfully',
-    imageUrl: req.file.location,
-    key: req.file.key
-  });
+router.post('/', protect, requireAdmin, upload.single('image'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+
+  if (req.file.size > 5 * 1024 * 1024) {
+    return res.status(413).json({ message: 'File too large' });
+  }
+
+  try {
+    const stored = await storeFileInMongo(req.file);
+    return res.json({
+      message: 'Image uploaded successfully',
+      imageUrl: `/api/upload/${stored.id}`,
+      key: stored.id,
+      fileId: stored.id,
+    });
+  } catch (error) {
+    console.error('MongoDB image upload failed:', error.message);
+    return res.status(500).json({ message: 'Image upload failed', error: error.message });
+  }
 });
 
-// Proxy endpoint to fetch objects from S3
-router.get('/proxy', async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const { url, key } = req.query;
-    let objectKey = key;
-
-    if (!objectKey) {
-      if (!url) return res.status(400).send('Missing url or key');
-      try {
-        const parsed = new URL(url);
-        if (!parsed.hostname.includes(process.env.AWS_BUCKET_NAME)) {
-          return res.status(400).send('URL host does not match configured bucket');
-        }
-        objectKey = parsed.pathname.replace(/^\//, '');
-      } catch (err) {
-        return res.status(400).send('Invalid URL');
-      }
+    const result = await getFileFromMongo(req.params.id);
+    if (!result) {
+      return res.status(404).json({ message: 'Image not found' });
     }
 
-    const cmd = new GetObjectCommand({ Bucket: process.env.AWS_BUCKET_NAME, Key: objectKey });
-    const data = await s3.send(cmd);
-    if (data.ContentType) res.setHeader('Content-Type', data.ContentType);
-    if (data.ContentLength) res.setHeader('Content-Length', data.ContentLength);
+    res.setHeader('Content-Type', result.file.contentType || 'application/octet-stream');
     res.setHeader('Cache-Control', 'public, max-age=86400');
-    data.Body.pipe(res);
+    result.stream.pipe(res);
   } catch (error) {
-    console.error('Error proxying S3 object:', error);
-    res.status(500).send('Failed to fetch image');
+    console.error('Error serving image from MongoDB:', error.message);
+    return res.status(500).json({ message: 'Failed to fetch image', error: error.message });
   }
 });
 
-// Public presigned URL generator
-router.get('/presign-public', async (req, res) => {
-  try {
-    const { key, expires } = req.query;
-    if (!key) return res.status(400).json({ message: 'key query parameter required' });
-    if (!key.startsWith('uploads/') || key.includes('..')) {
-      return res.status(400).json({ message: 'Invalid key' });
-    }
-
-    const cmd = new GetObjectCommand({ Bucket: process.env.AWS_BUCKET_NAME, Key: key });
-    const ttl = expires ? parseInt(expires, 10) : 3600;
-    const url = await getSignedUrl(s3, cmd, { expiresIn: ttl });
-    return res.json({ url, expiresIn: ttl });
-  } catch (error) {
-    console.error('Error generating public presigned url:', error);
-    return res.status(500).json({ message: 'Failed to generate presigned url', error: error.message });
-  }
+router.get('/proxy', async (req, res) => {
+  return res.status(404).json({ message: 'Legacy AWS proxy is not available in this MongoDB-only upload setup' });
 });
 
 module.exports = router;

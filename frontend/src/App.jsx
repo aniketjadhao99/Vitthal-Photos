@@ -1,29 +1,30 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import Home from './pages/Home';
-import About from './pages/About';
-import Contact from './pages/Contact';
-import Profile from './pages/Profile';
-import Cart from './pages/Cart';
-import Wishlist from './pages/Wishlist';
-import Checkout from './pages/Checkout';
-import ProductDetails from './pages/ProductDetails';
-import GodFrames from './pages/GodFrames';
-import WarriorFrames from './pages/WarriorFrames';
-import NewArrivals from './pages/NewArrivals';
-import CustomFrame from './pages/CustomFrame';
-import CollageFrames from './pages/CollageFrames';
-import FamilyFrames from './pages/FamilyFrames';
-import KidsFrames from './pages/KidsFrames';
-import Auth from './pages/Auth';
-import AdminPanel from './pages/AdminPanel';
-import Search from './pages/Search';
-import OrderSuccess from './pages/OrderSuccess';
+
+const Home = lazy(() => import('./pages/Home'));
+const About = lazy(() => import('./pages/About'));
+const Contact = lazy(() => import('./pages/Contact'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Cart = lazy(() => import('./pages/Cart'));
+const Wishlist = lazy(() => import('./pages/Wishlist'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const ProductDetails = lazy(() => import('./pages/ProductDetails'));
+const GodFrames = lazy(() => import('./pages/GodFrames'));
+const WarriorFrames = lazy(() => import('./pages/WarriorFrames'));
+const NewArrivals = lazy(() => import('./pages/NewArrivals'));
+const CustomFrame = lazy(() => import('./pages/CustomFrame'));
+const CollageFrames = lazy(() => import('./pages/CollageFrames'));
+const FamilyFrames = lazy(() => import('./pages/FamilyFrames'));
+const KidsFrames = lazy(() => import('./pages/KidsFrames'));
+const Auth = lazy(() => import('./pages/Auth'));
+const AdminPanel = lazy(() => import('./pages/AdminPanel'));
+const Search = lazy(() => import('./pages/Search'));
+const OrderSuccess = lazy(() => import('./pages/OrderSuccess'));
+const FAQ = lazy(() => import('./pages/FAQ'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 import { PrivacyPolicy, TermsOfService, RefundPolicy } from './pages/Legal';
-import FAQ from './pages/FAQ';
-import NotFound from './pages/NotFound';
 
 const AppContent = () => {
   const location = useLocation();
@@ -33,44 +34,46 @@ const AppContent = () => {
     <div className="app-wrapper">
       {!isAdminRoute && <Header />}
       <main>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/login" element={<Auth />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/wishlist" element={<Wishlist />} />
-          
-          {/* Category Pages */}
-          <Route path="/god" element={<GodFrames />} />
-          <Route path="/warriors" element={<WarriorFrames />} />
-          <Route path="/collage" element={<CollageFrames />} />
-          <Route path="/family" element={<FamilyFrames />} />
-          <Route path="/kids" element={<KidsFrames />} />
-          <Route path="/custom" element={<CustomFrame />} />
-          <Route path="/new" element={<NewArrivals />} />
-          <Route path="/search" element={<Search />} />
-          
-          {/* Product Details */}
-          <Route path="/product/:id" element={<ProductDetails />} />
+        <Suspense fallback={<div className="route-loading">Loading page…</div>}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/login" element={<Auth />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/wishlist" element={<Wishlist />} />
+            
+            {/* Category Pages */}
+            <Route path="/god" element={<GodFrames />} />
+            <Route path="/warriors" element={<WarriorFrames />} />
+            <Route path="/collage" element={<CollageFrames />} />
+            <Route path="/family" element={<FamilyFrames />} />
+            <Route path="/kids" element={<KidsFrames />} />
+            <Route path="/custom" element={<CustomFrame />} />
+            <Route path="/new" element={<NewArrivals />} />
+            <Route path="/search" element={<Search />} />
+            
+            {/* Product Details */}
+            <Route path="/product/:id" element={<ProductDetails />} />
 
-          {/* Order Success */}
-          <Route path="/order-success" element={<OrderSuccess />} />
+            {/* Order Success */}
+            <Route path="/order-success" element={<OrderSuccess />} />
 
-          {/* Legal and Info */}
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/terms" element={<TermsOfService />} />
-          <Route path="/refund-policy" element={<RefundPolicy />} />
-          <Route path="/faq" element={<FAQ />} />
+            {/* Legal and Info */}
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/faq" element={<FAQ />} />
 
-          {/* Admin Panel */}
-          <Route path="/admin" element={<AdminPanel />} />
+            {/* Admin Panel */}
+            <Route path="/admin" element={<AdminPanel />} />
 
-          {/* 404 Page */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* 404 Page */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </main>
       {!isAdminRoute && <Footer />}
       

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
+import { normalizeImageUrl } from '../utils/imageUtils';
 
 const API_URL = '/api';
 
@@ -14,6 +15,7 @@ const Checkout = () => {
   const [coupon, setCoupon] = useState(null);
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const razorpayScriptPromiseRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem('vitthal_token');
@@ -26,7 +28,7 @@ const Checkout = () => {
 
     const cart = JSON.parse(localStorage.getItem('vitthal_cart')) || [];
     if (cart.length === 0) { navigate('/cart'); return; }
-    setCartItems(cart);
+    setCartItems(cart.map(item => ({ ...item, image: normalizeImageUrl(item.image) })));
     setForm(f => ({ ...f, email: user.email || '', firstName: user.name || '' }));
 
     const savedCoupon = JSON.parse(localStorage.getItem('vitthal_coupon'));
@@ -39,6 +41,44 @@ const Checkout = () => {
   const total = Math.max(0, subtotal - (coupon?.discount || 0));
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
   const inp = { width: '100%', padding: '11px 14px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem', boxSizing: 'border-box' };
+
+  const loadRazorpayScript = async () => {
+    if (typeof window === 'undefined') {
+      throw new Error('Razorpay can only be loaded in the browser.');
+    }
+
+    if (window.Razorpay) {
+      return window.Razorpay;
+    }
+
+    if (razorpayScriptPromiseRef.current) {
+      return razorpayScriptPromiseRef.current;
+    }
+
+    razorpayScriptPromiseRef.current = new Promise((resolve, reject) => {
+      const existingScript = document.querySelector('script[src*="checkout.razorpay.com"]');
+
+      if (existingScript) {
+        existingScript.addEventListener('load', () => resolve(window.Razorpay), { once: true });
+        existingScript.addEventListener('error', () => reject(new Error('Razorpay script failed to load.')), { once: true });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => resolve(window.Razorpay);
+      script.onerror = () => reject(new Error('Razorpay script failed to load.'));
+      document.body.appendChild(script);
+    });
+
+    try {
+      return await razorpayScriptPromiseRef.current;
+    } catch (error) {
+      razorpayScriptPromiseRef.current = null;
+      throw error;
+    }
+  };
 
   // Handle order placement - decides between COD and Razorpay
   const handlePlaceOrder = async (e) => {
@@ -105,28 +145,18 @@ const Checkout = () => {
     console.log('🔄 [handleRazorpayPayment] Starting...');
     setIsPlacingOrder(true);
     try {
-      // CRITICAL: Check Razorpay script is loaded
+      // CRITICAL: Ensure Razorpay script is loaded before opening the payment modal.
       console.log('🔍 Checking Razorpay script availability...');
-      let razorpayReady = false;
-      
-      for (let i = 0; i < 20; i++) {
-        if (window.Razorpay) {
-          razorpayReady = true;
-          console.log('✅ [Script Check] Razorpay confirmed ready on attempt', i + 1);
-          break;
-        }
-        await new Promise(r => setTimeout(r, 100));
-      }
-
-      if (!razorpayReady) {
+      try {
+        await loadRazorpayScript();
+        console.log('✅ [Script Check] Razorpay script is available');
+      } catch (scriptError) {
         const errMsg = 'Razorpay payment script is not available. Please reload the page and try again.';
-        console.error('❌ [Script Check]', errMsg);
+        console.error('❌ [Script Check]', errMsg, scriptError);
         addToast(errMsg, 'error');
         setIsPlacingOrder(false);
-        return; // CRITICAL: Stop here, do NOT proceed to order creation
+        return;
       }
-
-      console.log('✅ [Script Check] Razorpay script is available');
 
       // Step 1: Create Razorpay order
       const amountInPaisa = Math.round(total * 100);
@@ -265,10 +295,18 @@ const Checkout = () => {
         console.log('✅ [Modal] Razorpay instance created successfully');
         console.log('🚀 [Modal] Calling razorpay.open()...');
         
-        // Try to open the modal
-        const openResult = razorpay.open();
-        console.log('✅ [Modal] razorpay.open() returned:', openResult);
-        console.log('✅ [Modal] Payment modal should now be visible to user');
+        // Open the modal on the next tick so it is triggered from the current browser interaction path.
+        const openResult = window.setTimeout(() => {
+          try {
+            razorpay.open();
+            console.log('✅ [Modal] Payment modal should now be visible to user');
+          } catch (openError) {
+            console.error('❌ [Modal] Error while opening Razorpay modal:', openError);
+            addToast('Unable to open the Razorpay payment window. Please try again.', 'error');
+            setIsPlacingOrder(false);
+          }
+        }, 0);
+        console.log('✅ [Modal] razorpay.open() scheduled:', openResult);
         
         // Don't reset isPlacingOrder here - wait for handler callback
         // The payment handler will call placeOrderDirectly when payment completes
@@ -339,7 +377,7 @@ const Checkout = () => {
         name: item.name,
         qty: item.quantity || 1,
         quantity: item.quantity || 1,
-        image: item.image,
+        image: normalizeImageUrl(item.image),
         price: item.price,
         product: item._id,
         size: item.size || 'Standard',

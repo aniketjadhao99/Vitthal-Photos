@@ -41,18 +41,28 @@ const createPaymentOrder = async (amount, currency = 'INR', receipt) => {
 const verifyPayment = async (paymentId, orderId, signature) => {
   try {
     const crypto = require('crypto');
-    // Use env var key secret for verification (more reliable)
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || 'default_secret';
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keySecret) {
+      console.error('❌ Razorpay secret missing in environment while verifying payment');
+      return { success: false, verified: false, error: 'Missing Razorpay secret' };
+    }
+
     const expectedSignature = crypto
       .createHmac('sha256', keySecret)
-      .update(orderId + '|' + paymentId)
+      .update(`${orderId}|${paymentId}`)
       .digest('hex');
+
+    console.log('🔐 [VerifyPayment] orderId:', orderId);
+    console.log('🔐 [VerifyPayment] paymentId:', paymentId);
+    console.log('🔐 [VerifyPayment] razorpay_signature:', signature);
+    console.log('🔐 [VerifyPayment] expectedSignature:', expectedSignature);
 
     if (expectedSignature === signature) {
       return { success: true, verified: true };
-    } else {
-      return { success: false, verified: false, error: 'Invalid signature' };
     }
+
+    console.warn('❌ [VerifyPayment] signature mismatch');
+    return { success: false, verified: false, error: 'Invalid signature' };
   } catch (error) {
     console.error('Error verifying payment:', error);
     return { success: false, error: error.message };

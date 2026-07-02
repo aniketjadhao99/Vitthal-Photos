@@ -265,7 +265,7 @@ const Profile = () => {
                         </div>
                         <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }}>
                           {order.orderItems.map((item, i) => (
-                            <img key={i} src={item.product?.images?.[0] || item.customization?.userUploadedImage || 'https://via.placeholder.com/50'} alt={item.name} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '8px' }} />
+                            <img key={i} src={normalizeImageUrl(item.product?.images?.[0] || item.customization?.userUploadedImage || 'https://via.placeholder.com/50')} alt={item.name} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '8px' }} />
                           ))}
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
@@ -366,7 +366,7 @@ const Profile = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               {selectedOrder.orderItems.map((item, i) => (
                 <div key={i} style={{ display: 'flex', gap: '20px', alignItems: 'center', paddingBottom: '15px', borderBottom: '1px solid #f9f9f9' }}>
-                  <img src={item.product?.images?.[0] || item.customization?.userUploadedImage || 'https://via.placeholder.com/80'} alt="" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '12px' }} />
+                  <img src={normalizeImageUrl(item.product?.images?.[0] || item.customization?.userUploadedImage || 'https://via.placeholder.com/80')} alt="" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '12px' }} />
                   <div style={{ flex: 1 }}>
                     <h4 style={{ margin: '0 0 5px 0', fontSize: '1rem' }}>{item.name}</h4>
                     <span style={{ fontSize: '0.85rem', color: '#777' }}>Qty: {item.quantity} | Size: {item.customization?.selectedSize || item.size || 'Standard'}</span>

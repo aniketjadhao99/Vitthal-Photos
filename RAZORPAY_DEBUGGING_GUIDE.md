@@ -122,8 +122,8 @@ If undefined:
 ### 2. **Environment Variables**
 Backend `.env` file must have:
 ```
-RAZORPAY_KEY_ID=rzp_test_T577krxJ8yuzny
-RAZORPAY_KEY_SECRET=1v4HU2f3PGS2Uisvg4nsml5d
+RAZORPAY_KEY_ID=rzp_live_T8XBdx2G70AsW7
+RAZORPAY_KEY_SECRET=JeDgMBSAvyvz21t9lqaDtFAa
 ```
 Without these, `/payment/create-order` will fail.
 

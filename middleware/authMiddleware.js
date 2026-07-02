@@ -4,18 +4,24 @@ const { User } = require('../lib/db');
 const protect = async (req, res, next) => {
   let token;
 
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
+  const authHeader = req.headers.authorization || '';
+  const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
 
-      // Verify JWT_SECRET is set in environment
+  if (bearerMatch) {
+    try {
+      token = bearerMatch[1];
+
       const secret = process.env.JWT_SECRET;
       if (!secret) {
         console.error('CRITICAL: JWT_SECRET not set in environment variables');
         return res.status(500).json({ message: 'Server configuration error' });
       }
 
-      const decoded = jwt.verify(token, secret);
+      const decoded = jwt.verify(token, secret, {
+        algorithms: ['HS256'],
+        issuer: 'vitthal-photo-frames',
+        audience: 'web-client',
+      });
 
       const user = await User.findById(decoded.id);
 

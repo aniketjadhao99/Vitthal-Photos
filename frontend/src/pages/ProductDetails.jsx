@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import Reviews from '../components/Reviews';
+import { normalizeImageUrl } from '../utils/imageUtils';
 
 const API_URL = '/api'; // Setup proxy in vite.config.js
 
@@ -23,7 +24,7 @@ const ProductDetails = () => {
         const data = await res.json();
         setProduct(data);
         if (data.images && data.images.length > 0) {
-          setSelectedImage(data.images[0]);
+          setSelectedImage(normalizeImageUrl(data.images[0]));
         }
       } catch (err) {
         console.error(err);

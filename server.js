@@ -21,17 +21,37 @@ const newsletterRoutes = require('./routes/newsletterRoutes');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
+const isProduction = process.env.NODE_ENV === 'production';
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://vitthalphotos.com,https://www.vitthalphotos.com')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  if (origin.startsWith('http://localhost')) return true;
+  if (origin.startsWith('http://127.0.0.1')) return true;
+  if (origin.startsWith('https://localhost')) return true;
+  if (origin.startsWith('https://127.0.0.1')) return true;
+  return false;
+};
+
 // Security middleware
 const { 
   securityHeaders, 
   authLimiter, 
   apiLimiter, 
   paymentLimiter, 
+  uploadLimiter, 
   sanitizeInputs, 
-  secureHeaders 
+  secureHeaders,
+  csrfProtection,
+  issueCsrfToken
 } = require('./middleware/securityMiddleware');
 
 const app = express();
+app.disable('x-powered-by');
 
 // Validate critical environment variables
 if (!process.env.JWT_SECRET) {
@@ -90,25 +110,54 @@ const dbRequiredMiddleware = (req, res, next) => {
 // Apply security headers first
 app.use(securityHeaders);
 app.use(secureHeaders);
+app.use((req, res, next) => {
+  if (req.path && /[\u0000-\u001f]/.test(req.path)) {
+    return res.status(400).json({ message: 'Invalid request path' });
+  }
+  next();
+});
 
 // CORS - Restrictive configuration
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['https://vitthalphotos.com', 'https://www.vitthalphotos.com'],
+  origin: (origin, callback) => {
+    if (!origin || isAllowedOrigin(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error('Origin not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400,
 }));
 
 // Body parser with size limits
-app.use(express.json({ limit: '10mb' })); // Reduced from 50mb
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.json({ limit: '10mb', strict: true }));
+app.use(express.urlencoded({ limit: '10mb', extended: true, parameterLimit: 1000 }));
 app.use(cookieParser());
+app.use((req, res, next) => {
+  if (req.cookies && req.cookies.session) {
+    res.cookie('session', req.cookies.session, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 30,
+    });
+  }
+  next();
+});
 
 // Apply sanitization to all requests
 app.use(sanitizeInputs);
 
 // Apply general rate limiting
 app.use('/api/', apiLimiter);
+
+// Lightweight CSRF protection for state-changing requests
+app.use(csrfProtection);
+
+app.get('/api/csrf-token', issueCsrfToken);
 
 // Check DB connectivity for API routes
 app.use('/api/', dbRequiredMiddleware);
@@ -117,7 +166,7 @@ app.use('/api/', dbRequiredMiddleware);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payment', paymentLimiter, paymentRoutes); // Strict rate limit on payments
-app.use('/api/upload', uploadRoutes);
+app.use('/api/upload', uploadLimiter, uploadRoutes);
 app.use('/api/users', authLimiter, userRoutes); // Strict rate limit on auth
 app.use('/api/settings', settingsRoutes);
 app.use('/api/reviews', reviewRoutes);
@@ -144,11 +193,22 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Serve static frontend files (React build)
 app.use(express.static(path.join(__dirname, 'frontend', 'dist')));
 
-// SPA fallback – serve index.html for all non-API routes
-app.get('*path', (req, res) => {
-  if (!req.path.startsWith('/api')) {
-    res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
+// SPA fallback – serve index.html for all non-API routes, but do not rewrite asset or upload paths
+app.get('*path', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
   }
+
+  const reservedPrefixes = ['/assets', '/uploads', '/favicon.svg', '/icons.svg', '/robots.txt', '/sitemap.xml', '/manifest.json'];
+  const isReservedPath = reservedPrefixes.some((prefix) => {
+    return req.path === prefix || req.path.startsWith(`${prefix}/`);
+  });
+
+  if (isReservedPath) {
+    return res.status(404).send('Not found');
+  }
+
+  res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
 });
 
 

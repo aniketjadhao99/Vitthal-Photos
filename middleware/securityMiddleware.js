@@ -1,19 +1,20 @@
+const crypto = require('crypto');
 const helmet = require('helmet');
 const mongoSanitize = require('mongo-sanitize');
 const rateLimit = require('express-rate-limit');
-const csrf = require('csurf');
-const cookieParser = require('cookie-parser');
 
 // 1. Helmet - Security Headers
 const securityHeaders = helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      // Disallow unsafe-inline to strengthen CSP. Inline scripts/styles
-      // should be replaced with hashed nonces where required.
-      // Allow secure external resources (CDNs, Google Fonts, S3) but disallow inline.
-      scriptSrc: ["'self'", 'https:'],
-      // Allow inline styles for compatibility (consider removing after refactor)
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'self'"],
+      scriptSrc: ["'self'", 'https:', "'unsafe-inline'"],
+      frameSrc: ["'self'", 'https:', 'https://checkout.razorpay.com', 'https://api.razorpay.com'],
+      childSrc: ["'self'", 'https:', 'https://checkout.razorpay.com', 'https://api.razorpay.com'],
       styleSrc: ["'self'", 'https:', "'unsafe-inline'"],
       imgSrc: ["'self'", 'data:', 'https:'],
       connectSrc: ["'self'", 'https:'],
@@ -21,7 +22,7 @@ const securityHeaders = helmet({
     },
   },
   hsts: {
-    maxAge: 31536000, // 1 year
+    maxAge: 31536000,
     includeSubDomains: true,
     preload: true,
   },
@@ -29,6 +30,9 @@ const securityHeaders = helmet({
   xssFilter: true,
   noSniff: true,
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  crossOriginOpenerPolicy: { policy: 'same-origin' },
+  crossOriginResourcePolicy: { policy: 'same-site' },
+  hidePoweredBy: true,
 });
 
 // 2. Rate Limiting - Auth endpoints (strict)
@@ -62,7 +66,16 @@ const paymentLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// 5. Data Sanitization - Clean all inputs
+// 5. Rate Limiting - Upload endpoints
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: 'Too many uploads, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// 6. Data Sanitization - Clean all inputs
 const sanitizeInputs = (req, res, next) => {
   const MAX_STR_LEN = 1000;
 
@@ -84,10 +97,12 @@ const sanitizeInputs = (req, res, next) => {
   };
 
   const sanitizeObject = (obj) => {
-    const out = Array.isArray(obj) ? [] : {};
-    for (const k in obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+    const sanitized = mongoSanitize(obj);
+    const out = Array.isArray(sanitized) ? [] : {};
+    for (const k in sanitized) {
       try {
-        out[k] = sanitizeValue(obj[k], k);
+        out[k] = sanitizeValue(sanitized[k], k);
       } catch (e) {
         out[k] = undefined;
       }
@@ -101,18 +116,77 @@ const sanitizeInputs = (req, res, next) => {
   next();
 };
 
-// 6. CSRF Protection
-const csrfProtection = csrf({ cookie: false });
-
 // 7. Security middleware to apply on specific routes
 const secureHeaders = (req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('X-Download-Options', 'noopen');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' https:; style-src 'self' https: 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:; font-src 'self' https: data:");
+  res.setHeader('Content-Security-Policy', "default-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; script-src 'self' https: 'unsafe-inline'; style-src 'self' https: 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:; font-src 'self' https: data:; frame-src 'self' https://checkout.razorpay.com https://api.razorpay.com; child-src 'self' https://checkout.razorpay.com https://api.razorpay.com;");
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   next();
+};
+
+// 8. Lightweight CSRF protection for unsafe requests
+const isSameOriginRequest = (req) => {
+  const origin = req.get('origin');
+  const referer = req.get('referer');
+  const host = req.get('host');
+  const expectedOrigin = `${req.protocol}://${host}`;
+
+  if (!origin && !referer) return true;
+
+  try {
+    if (origin && new URL(origin).origin !== expectedOrigin) return false;
+    if (referer) {
+      const refererUrl = new URL(referer);
+      if (refererUrl.origin !== expectedOrigin) return false;
+    }
+  } catch (error) {
+    return false;
+  }
+
+  return true;
+};
+
+const csrfProtection = (req, res, next) => {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+
+  const authHeader = req.headers.authorization || '';
+  if (/^Bearer\s+/.test(authHeader)) {
+    return next();
+  }
+
+  if (isSameOriginRequest(req)) {
+    return next();
+  }
+
+  const suppliedToken = req.get('x-csrf-token') || req.body?.csrfToken || req.query?.csrfToken || req.cookies?.csrfToken;
+  const cookieToken = req.cookies?.csrfToken;
+
+  if (suppliedToken && cookieToken && suppliedToken === cookieToken) {
+    return next();
+  }
+
+  return res.status(403).json({ message: 'Invalid or missing CSRF token' });
+};
+
+const issueCsrfToken = (req, res) => {
+  const token = crypto.randomBytes(32).toString('hex');
+  res.cookie('csrfToken', token, {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 1000 * 60 * 60 * 24,
+  });
+  res.json({ csrfToken: token });
 };
 
 module.exports = {
@@ -120,7 +194,9 @@ module.exports = {
   authLimiter,
   apiLimiter,
   paymentLimiter,
+  uploadLimiter,
   sanitizeInputs,
-  csrfProtection,
   secureHeaders,
+  csrfProtection,
+  issueCsrfToken,
 };

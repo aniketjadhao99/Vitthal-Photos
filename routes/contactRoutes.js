@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const { protect } = require('../middleware/authMiddleware');
+const { requireAdmin } = require('../middleware/adminMiddleware');
 const { sendEmail } = require('../services/emailService');
 
 // @desc    Submit contact form
@@ -13,6 +14,14 @@ router.post('/', async (req, res) => {
 
     if (!name || !email || !subject || !message) {
       return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    if (typeof name !== 'string' || typeof email !== 'string' || typeof subject !== 'string' || typeof message !== 'string') {
+      return res.status(400).json({ message: 'Invalid form payload' });
+    }
+
+    if (message.length > 2000 || subject.length > 200) {
+      return res.status(413).json({ message: 'Payload too large' });
     }
 
     const contact = await prisma.contactForm.create({
@@ -41,11 +50,8 @@ router.post('/', async (req, res) => {
 // @desc    Get all contact submissions (Admin)
 // @route   GET /api/contact
 // @access  Private - Admin
-router.get('/', protect, async (req, res) => {
+router.get('/', protect, requireAdmin, async (req, res) => {
   try {
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
 
     const contacts = await prisma.contactForm.findMany({
       orderBy: { createdAt: 'desc' }
@@ -60,11 +66,8 @@ router.get('/', protect, async (req, res) => {
 // @desc    Update contact status / add response (Admin)
 // @route   PUT /api/contact/:id
 // @access  Private - Admin
-router.put('/:id', protect, async (req, res) => {
+router.put('/:id', protect, requireAdmin, async (req, res) => {
   try {
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
 
     const { status, response } = req.body;
     const contact = await prisma.contactForm.findUnique({ where: { id: req.params.id } });
@@ -95,11 +98,8 @@ router.put('/:id', protect, async (req, res) => {
 // @desc    Delete contact submission (Admin)
 // @route   DELETE /api/contact/:id
 // @access  Private - Admin
-router.delete('/:id', protect, async (req, res) => {
+router.delete('/:id', protect, requireAdmin, async (req, res) => {
   try {
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
 
     await prisma.contactForm.delete({ where: { id: req.params.id } });
     res.json({ message: 'Contact deleted' });

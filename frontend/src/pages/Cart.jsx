@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { normalizeImageUrl } from '../utils/imageUtils';
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -105,7 +106,7 @@ const Cart = () => {
                     <tr key={index}>
                       <td>
                         <div className="cart-product">
-                          <img src={item.image} alt={item.name} />
+                          <img src={normalizeImageUrl(item.image)} alt={item.name} />
                           <div>
                             <h4 style={{ margin: 0 }}>{item.name}</h4>
                             <small>Size: {item.size || 'Standard'}</small>
@@ -140,7 +141,7 @@ const Cart = () => {
                     <i className="bi bi-trash"></i>
                   </button>
                   <div className="cart-mobile-product-info">
-                    <img src={item.image} alt={item.name} />
+                    <img src={normalizeImageUrl(item.image)} alt={item.name} />
                     <div className="cart-mobile-details">
                       <h4>{item.name}</h4>
                       <small>Size: {item.size || 'Standard'}</small>

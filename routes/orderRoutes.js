@@ -4,6 +4,40 @@ const prisma = require('../lib/prisma');
 const { protect } = require('../middleware/authMiddleware');
 const { sendOrderNotification, notifyAdminNewOrder } = require('../services/notificationService');
 
+const awsBucketName = process.env.AWS_BUCKET_NAME;
+const normalizeImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return url;
+  if (!url.startsWith('http')) return url;
+  const isAwsImage = url.includes('amazonaws.com') && (awsBucketName ? url.includes(awsBucketName) : true);
+  if (isAwsImage) {
+    return `/api/upload/proxy?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+};
+
+const normalizeProduct = (product) => {
+  if (!product || typeof product !== 'object') return product;
+  const normalized = { ...product };
+  if (Array.isArray(normalized.images)) {
+    normalized.images = normalized.images.map(normalizeImageUrl);
+  }
+  if (normalized.image) {
+    normalized.image = normalizeImageUrl(normalized.image);
+  }
+  if (normalized.thumbnail) {
+    normalized.thumbnail = normalizeImageUrl(normalized.thumbnail);
+  }
+  return normalized;
+};
+
+const normalizeOrderCustomization = (customization) => {
+  if (!customization || typeof customization !== 'object') return customization;
+  return {
+    ...customization,
+    userUploadedImage: normalizeImageUrl(customization.userUploadedImage),
+  };
+};
+
 // @desc    Get logged-in user's orders
 // @route   GET /api/orders/myorders
 // @access  Private
@@ -32,7 +66,8 @@ router.get('/myorders', protect, async (req, res) => {
       orderItems: order.orderItems.map(item => ({
         ...item,
         _id: item.id,
-        product: item.product ? { ...item.product, _id: item.product.id } : null
+        product: item.product ? normalizeProduct({ ...item.product, _id: item.product.id }) : null,
+        customization: normalizeOrderCustomization(item.customization)
       }))
     }));
 
