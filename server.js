@@ -31,18 +31,35 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
 const isProduction = process.env.NODE_ENV === 'production';
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://vitthalphotos.com,https://www.vitthalphotos.com')
+
+const normalizeOrigin = (origin) => {
+  try {
+    return new URL(origin).origin.toLowerCase();
+  } catch {
+    return origin ? origin.trim().toLowerCase() : '';
+  }
+};
+
+const rawAllowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://vitthalphotos.com,https://www.vitthalphotos.com')
   .split(',')
-  .map((origin) => origin.trim())
+  .map((origin) => normalizeOrigin(origin))
   .filter(Boolean);
+
+const defaultAllowedOrigins = [
+  'https://vitthalphotos.com',
+  'https://www.vitthalphotos.com'
+].map(normalizeOrigin);
+
+const allowedOrigins = Array.from(new Set([...rawAllowedOrigins, ...defaultAllowedOrigins]));
 
 const isAllowedOrigin = (origin) => {
   if (!origin) return true;
-  if (allowedOrigins.includes(origin)) return true;
-  if (origin.startsWith('http://localhost')) return true;
-  if (origin.startsWith('http://127.0.0.1')) return true;
-  if (origin.startsWith('https://localhost')) return true;
-  if (origin.startsWith('https://127.0.0.1')) return true;
+  const normalizedOrigin = normalizeOrigin(origin);
+  if (allowedOrigins.includes(normalizedOrigin)) return true;
+  if (normalizedOrigin.startsWith('http://localhost')) return true;
+  if (normalizedOrigin.startsWith('http://127.0.0.1')) return true;
+  if (normalizedOrigin.startsWith('https://localhost')) return true;
+  if (normalizedOrigin.startsWith('https://127.0.0.1')) return true;
   return false;
 };
 
@@ -126,13 +143,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// CORS - Restrictive configuration
+// CORS - Restrictive configuration with origin normalization
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || isAllowedOrigin(origin)) {
       callback(null, true);
       return;
     }
+    console.warn('❌ CORS rejection:', origin);
     callback(new Error('Origin not allowed by CORS'));
   },
   credentials: true,
