@@ -38,11 +38,14 @@ const escapeRegex = (s) => {
 
 router.get('/', async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 });
+    const products = await Product.find()
+      .select('name basePrice images category description salesCount')
+      .sort({ createdAt: -1 })
+      .lean();
     // Map id to _id for frontend compatibility
     const mappedProducts = products.map(p => {
       const product = {
-        ...p.toObject(),
+        ...p,
         _id: p._id.toString(),
         price: Number(p.basePrice),
         basePrice: Number(p.basePrice)
@@ -82,8 +85,10 @@ router.get('/search/:query', async (req, res) => {
         { category: regex },
         { description: regex }
       ]
-    });
-    const mappedProducts = products.map(p => normalizeProduct({ ...p.toObject(), _id: p._id.toString(), price: p.basePrice }));
+    })
+      .select('name basePrice images category description salesCount')
+      .lean();
+    const mappedProducts = products.map(p => normalizeProduct({ ...p, _id: p._id.toString(), price: Number(p.basePrice) }));
     res.json(mappedProducts);
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
@@ -95,8 +100,12 @@ router.get('/search/:query', async (req, res) => {
 // @access  Public
 router.get('/trending', async (req, res) => {
   try {
-    const products = await Product.find().sort({ salesCount: -1 }).limit(7);
-    const mappedProducts = products.map(p => normalizeProduct({ ...p.toObject(), _id: p._id.toString(), price: p.basePrice }));
+    const products = await Product.find()
+      .sort({ salesCount: -1 })
+      .limit(7)
+      .select('name basePrice images category description salesCount')
+      .lean();
+    const mappedProducts = products.map(p => normalizeProduct({ ...p, _id: p._id.toString(), price: Number(p.basePrice) }));
     res.json(mappedProducts);
   } catch (error) {
     console.error('⚠️ MongoDB trending query failed, using static product fallback:', error.message);
@@ -124,7 +133,7 @@ router.get('/filter', async (req, res) => {
     
     let where = {};
     if (category && category !== 'all') {
-      where.category = category;
+      where.category = new RegExp(escapeRegex(category), 'i');
     }
     if (minPrice || maxPrice) {
       where.basePrice = {};
@@ -150,13 +159,15 @@ router.get('/filter', async (req, res) => {
 
     const [products, total] = await Promise.all([
       Product.find(where)
+        .select('name basePrice images category description salesCount')
         .sort(sortObj)
         .limit(Number(limit))
-        .skip(Number(skip)),
+        .skip(Number(skip))
+        .lean(),
       Product.countDocuments(where)
     ]);
 
-    const mapped = products.map(p => normalizeProduct({ ...p.toObject(), _id: p._id.toString(), price: p.basePrice }));
+    const mapped = products.map(p => normalizeProduct({ ...p, _id: p._id.toString(), price: Number(p.basePrice) }));
     res.json({ products: mapped, total, count: products.length, skip, limit });
   } catch (error) {
     console.error('⚠️ MongoDB filter query failed, using static product catalog fallback:', error.message);

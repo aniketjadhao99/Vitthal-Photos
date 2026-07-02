@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import CollectionsNav from '../components/CollectionsNav';
+import { normalizeImageUrl } from '../utils/imageUtils';
 
 const API_URL = '/api';
 
@@ -14,11 +15,10 @@ const FamilyFrames = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch(`${API_URL}/products`);
+        const res = await fetch(`${API_URL}/products/filter?category=Family&limit=20`);
         if (!res.ok) return;
-        const allProducts = await res.json();
-        // Filter by Family category
-        setProducts(allProducts.filter(p => p.category === 'Family' || p.category === 'Families'));
+        const data = await res.json();
+        setProducts(data.products || []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -89,7 +89,15 @@ const FamilyFrames = () => {
             {products.map(product => (
               <div className="T-product" key={product._id}>
                 <div className="img-cover" onClick={() => navigate(`/product/${product._id}`)}>
-                  <div className="img-1" style={{ backgroundImage: `url('${product.images[0] || '/assets/images/logo.png'}')` }}></div>
+                  <img
+                    className="img-1"
+                    width="360"
+                    height="450"
+                    src={normalizeImageUrl(product.images[0]) || '/assets/images/logo.png'}
+                    alt={product.name}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <button className="fev-btn" onClick={(e) => { e.stopPropagation(); toggleWishlist(product); }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-heart" viewBox="0 0 16 16">
                       <path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143q.09.083.176.171a3 3 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15" />
