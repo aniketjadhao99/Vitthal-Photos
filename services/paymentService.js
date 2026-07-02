@@ -7,6 +7,9 @@ const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
 if (!keyId || !keySecret) {
   console.error('❌ Razorpay credentials are missing. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.');
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ Production environment variables for Razorpay are not set. Please add them in your hosting provider dashboard.');
+  }
 }
 
 const razorpay = new Razorpay({

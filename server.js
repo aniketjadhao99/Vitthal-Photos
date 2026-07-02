@@ -1,6 +1,15 @@
-require('dotenv').config();
-const express = require('express');
 const path = require('path');
+const dotenv = require('dotenv');
+
+const envPath = path.resolve(__dirname, '.env');
+const envResult = dotenv.config({ path: envPath });
+if (envResult.error) {
+  console.warn(`❌ dotenv could not load ${envPath}:`, envResult.error.message);
+} else {
+  console.log(`✅ dotenv loaded ${Object.keys(envResult.parsed || {}).length} vars from ${envPath}`);
+}
+
+const express = require('express');
 const crypto = require('crypto');
 const { connectDB } = require('./lib/db');
 const productRoutes = require('./routes/productRoutes');
