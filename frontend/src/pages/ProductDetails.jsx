@@ -92,7 +92,7 @@ const ProductDetails = () => {
       <section className="product-details-container">
         <div className="product-gallery">
           <div className="main-image">
-            <img id="main-product-img" src={selectedImage || 'https://lh3.googleusercontent.com/aida-public/AB6AXuA3DgY-zNs72yCHVJFYJAkK0SSbL9NOORmRV8YV8irhZD5e11LwGKbgL6G1APl9megiA8xN6EZ6BxUiSyKX7E2lNpqrpM2lryaHqmFNUBlXrpLZSxzj4wx34QcEhnhye79ySSbxfrslcVe7qAxIQCGWK9K2u1wVjoPEQO1oHCJxF_nIrA4eyVtcvgwyS_2PyBZTk-2Xb9Wwq3hyHNayHROxabcMs_rrrMgJ7tXZErV1lmEaV9KTJnN_EeiJB1dwpJbrPW3UrLsG-Bh7'} alt={product.name} />
+            <img id="main-product-img" width="740" height="740" loading="lazy" decoding="async" src={selectedImage || 'https://lh3.googleusercontent.com/aida-public/AB6AXuA3DgY-zNs72yCHVJFYJAkK0SSbL9NOORmRV8YV8irhZD5e11LwGKbgL6G1APl9megiA8xN6EZ6BxUiSyKX7E2lNpqrpM2lryaHqmFNUBlXrpLZSxzj4wx34QcEhnhye79ySSbxfrslcVe7qAxIQCGWK9K2u1wVjoPEQO1oHCJxF_nIrA4eyVtcvgwyS_2PyBZTk-2Xb9Wwq3hyHNayHROxabcMs_rrrMgJ7tXZErV1lmEaV9KTJnN_EeiJB1dwpJbrPW3UrLsG-Bh7'} alt={product.name} />
           </div>
           <div className="thumbnail-list">
             {product.images && product.images.map((img, idx) => (
