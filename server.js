@@ -51,6 +51,7 @@ const defaultAllowedOrigins = [
 ].map(normalizeOrigin);
 
 const allowedOrigins = Array.from(new Set([...rawAllowedOrigins, ...defaultAllowedOrigins]));
+const allowedOriginHostSuffixes = ['.hostingersite.com'];
 
 const isAllowedOrigin = (origin) => {
   if (!origin) return true;
@@ -60,6 +61,7 @@ const isAllowedOrigin = (origin) => {
   if (normalizedOrigin.startsWith('http://127.0.0.1')) return true;
   if (normalizedOrigin.startsWith('https://localhost')) return true;
   if (normalizedOrigin.startsWith('https://127.0.0.1')) return true;
+  if (allowedOriginHostSuffixes.some((suffix) => normalizedOrigin.endsWith(suffix))) return true;
   return false;
 };
 
