@@ -1,12 +1,21 @@
 const path = require('path');
+const fs = require('fs');
 const dotenv = require('dotenv');
 
 const envPath = path.resolve(__dirname, '.env');
-const envResult = dotenv.config({ path: envPath });
-if (envResult.error) {
-  console.warn(`❌ dotenv could not load ${envPath}:`, envResult.error.message);
+if (fs.existsSync(envPath)) {
+  const envResult = dotenv.config({ path: envPath });
+  if (envResult.error) {
+    console.warn(`❌ dotenv could not load ${envPath}:`, envResult.error.message);
+  } else {
+    console.log(`✅ dotenv loaded ${Object.keys(envResult.parsed || {}).length} vars from ${envPath}`);
+  }
 } else {
-  console.log(`✅ dotenv loaded ${Object.keys(envResult.parsed || {}).length} vars from ${envPath}`);
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`ℹ️ dotenv .env file not found at ${envPath}. Production env vars are expected to be set externally.`);
+  } else {
+    console.warn(`⚠️ dotenv .env file not found at ${envPath}. Falling back to existing environment variables.`);
+  }
 }
 
 const express = require('express');
