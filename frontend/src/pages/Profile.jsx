@@ -367,7 +367,7 @@ const Profile = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               {selectedOrder.orderItems.map((item, i) => (
                 <div key={i} style={{ display: 'flex', gap: '20px', alignItems: 'center', paddingBottom: '15px', borderBottom: '1px solid #f9f9f9' }}>
-                  <img src={normalizeImageUrl(item.product?.images?.[0] || item.customization?.userUploadedImage || 'https://via.placeholder.com/80')} alt="" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '12px' }} />
+                  <img loading="lazy" decoding="async" src={normalizeImageUrl(item.product?.images?.[0] || item.customization?.userUploadedImage || 'https://via.placeholder.com/80')} alt="" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '12px' }} />
                   <div style={{ flex: 1 }}>
                     <h4 style={{ margin: '0 0 5px 0', fontSize: '1rem' }}>{item.name}</h4>
                     <span style={{ fontSize: '0.85rem', color: '#777' }}>Qty: {item.quantity} | Size: {item.customization?.selectedSize || item.size || 'Standard'}</span>

@@ -591,7 +591,7 @@ const Checkout = () => {
               {cartItems.map((item, index) => (
                 <div key={index} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px solid #eee', paddingBottom: '15px' }}>
                   <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                    <img src={item.image} alt={item.name} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '8px' }} />
+                    <img loading="lazy" decoding="async" src={item.image} alt={item.name} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '8px' }} />
                     <div>
                       <strong style={{ display: 'block', fontSize: '0.95rem' }}>{item.name}</strong>
                       <span style={{ fontSize: '0.85rem', color: '#666' }}>Qty: {item.quantity || 1} | Size: {item.size || 'Standard'}</span>
