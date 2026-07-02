@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import { normalizeImageUrl } from '../utils/imageUtils';
-import heroImage from '../assets/hero.png';
 
 const API_URL = '/api'; // Use proxy or env var in real app
 
@@ -149,7 +148,7 @@ const Home = () => {
         <div className="hero-conteiner">
           <img
             className="hero-banner"
-            src={heroImage}
+            src="/assets/images/hero.png"
             alt="Vitthal Photo Frames premium collection"
             loading="eager"
             fetchPriority="high"
