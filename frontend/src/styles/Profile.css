@@ -65,6 +65,27 @@
 }
 
 @media (max-width: 768px) {
+  .profile-page-container {
+    padding: 0 16px;
+    margin: 20px auto;
+  }
+
+  .profile-intro {
+    margin-bottom: 35px;
+  }
+
+  .profile-intro h1 {
+    font-size: 2rem;
+  }
+
+  .profile-intro p {
+    font-size: 1rem;
+  }
+
+  .profile-card {
+    padding: 24px;
+  }
+
   .profile-order-details-grid,
   .profile-address-form-grid {
     grid-template-columns: 1fr;
@@ -72,11 +93,31 @@
 
   .profile-order-details-grid {
     padding: 20px;
+    gap: 16px;
+  }
+
+  .profile-order-details-grid > div {
+    width: 100%;
   }
 
   .profile-modal,
   .profile-modal-small {
     max-width: 100%;
     margin: 0 10px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 500px) {
+  .profile-page-container {
+    padding: 0 12px;
+  }
+
+  .profile-intro h1 {
+    font-size: 1.9rem;
+  }
+
+  .profile-card {
+    padding: 20px;
   }
 }
