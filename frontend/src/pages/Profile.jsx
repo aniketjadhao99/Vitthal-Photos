@@ -250,7 +250,7 @@ const Profile = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     {orders.map(order => (
                       <div key={order._id} style={{ border: '1px solid #eee', borderRadius: '12px', padding: '20px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px solid #f9f9f9', paddingBottom: '10px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '12px', marginBottom: '15px', borderBottom: '1px solid #f9f9f9', paddingBottom: '10px' }}>
                           <div>
                             <span style={{ fontSize: '0.8rem', color: '#999', display: 'block' }}>Order ID</span>
                             <strong style={{ fontSize: '0.9rem' }}>#{order._id.slice(-8).toUpperCase()}</strong>
@@ -269,7 +269,7 @@ const Profile = () => {
                             <img key={i} src={normalizeImageUrl(item.product?.images?.[0] || item.customization?.userUploadedImage || 'https://via.placeholder.com/50')} alt={item.name} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '8px' }} />
                           ))}
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
                           <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>₹{order.totalPrice.toLocaleString()}</span>
                           <button 
                             onClick={() => { setSelectedOrder(order); setShowModal(true); }}
@@ -310,7 +310,7 @@ const Profile = () => {
                 </div>
                 {/* Addresses Section */}
             <div className="profile-card" style={{ marginTop: '30px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '25px' }}>
                 <h2 style={{ fontSize: '1.4rem', color: '#333', margin: 0, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <i className="bi bi-geo-alt" style={{ color: '#fa873b', fontSize: '1.3rem' }}></i> Saved Addresses
                 </h2>
