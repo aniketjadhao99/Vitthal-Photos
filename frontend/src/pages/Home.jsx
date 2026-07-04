@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import { normalizeImageUrl } from '../utils/imageUtils';
+import heroImage from '../assets/hero.png';
 
 const API_URL = '/api'; // Use proxy or env var in real app
 
@@ -145,9 +146,17 @@ const Home = () => {
   return (
     <>
       <section className="hero">
-        <div className="hero-conteiner" style={{
-          backgroundImage: `linear-gradient(to right, rgba(0, 0, 0, 0.7) 0%, rgba(19, 18, 18, 0.3) 100%), url(https://lh3.googleusercontent.com/aida-public/AB6AXuBBzJz38JyxYXODQhdqONOGpkDSORxkVS7clmy_LXbUYwbkqyUdQNy4kSty2N0Xe4hbOCpCS8HzYo7Loj30jEaqVbRoJ1RI8t67rfdzqMgOCaCMO8LkBKZP1bw-1iJ83mqvlwGP58HTSqlcZv9TowJVXLYPaN2ZPIVNNZsaG9rXjhGnIRAJ8tkMJAMg991-Farsfa9zSVuscEzZ1P7TJJIMtUWnUtE8NLfXfmcKjG6QodUukMJlsgt7DX_oZtmc_JUEALNQLIq5kD4M)`
-        }}>
+        <div className="hero-conteiner">
+          <img
+            className="hero-banner"
+            src={heroImage}
+            alt="Vitthal Photo Frames premium collection"
+            loading="eager"
+            fetchPriority="high"
+            width="1600"
+            height="900"
+          />
+          <div className="hero-overlay" />
           <div className="hero-content">
             <span className="label">New Collection</span>
             <h1>Frame Your <br /><span className="text-primary">Devotion & Pride</span></h1>
