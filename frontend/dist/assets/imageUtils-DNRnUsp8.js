@@ -1,1 +1,0 @@
-var e=e=>typeof e==`string`&&/https?:\/\/(?:[\w.-]+\.)?amazonaws\.com\//.test(e),t=t=>!t||typeof t!=`string`?t:e(t)?`/api/upload/proxy?url=${encodeURIComponent(t)}`:t;export{t};

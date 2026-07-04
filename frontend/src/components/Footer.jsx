@@ -64,8 +64,8 @@ const Footer = () => {
               <button type="submit">Subscribe</button>
             </form>
             <div className="footer-contact-info">
-              <a href="tel:+919876543210">
-                <i className="bi bi-telephone-fill"></i> +91 9876543210
+              <a href="tel:+919822329950">
+                <i className="bi bi-telephone-fill"></i> +91 9822329950
               </a>
               <a href="mailto:vitthalphotos99@gmail.com">
                 <i className="bi bi-envelope-fill"></i> vitthalphotos99@gmail.com
