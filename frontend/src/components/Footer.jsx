@@ -25,7 +25,7 @@ const Footer = () => {
               <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
                 <i className="bi bi-twitter"></i>
               </a>
-              <a href="https://whatsapp.com" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+              <a href="https://wa.me/919822329950" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
                 <i className="bi bi-whatsapp"></i>
               </a>
             </div>

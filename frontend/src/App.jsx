@@ -79,7 +79,7 @@ const AppContent = () => {
       
       {/* Floating Support Button */}
       <a 
-        href="https://wa.me/919876543210" 
+        href="https://wa.me/919822329950" 
         target="_blank" 
         rel="noopener noreferrer"
         style={{
