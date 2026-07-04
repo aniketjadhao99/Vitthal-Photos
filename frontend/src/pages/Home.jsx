@@ -148,7 +148,7 @@ const Home = () => {
         <div className="hero-conteiner">
           <img
             className="hero-banner"
-            src="/assets/images/hero.png"
+            src="/assets/images/unnamed.png"
             alt="Vitthal Photo Frames premium collection"
             loading="eager"
             fetchPriority="high"
