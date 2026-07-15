@@ -265,6 +265,7 @@ export default function AdminPanel() {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [newStatus, setNewStatus] = useState('');
+  const [adminVerified, setAdminVerified] = useState(false);
 
   const [showOrderDetails, setShowOrderDetails] = useState(false);
 
@@ -278,13 +279,44 @@ export default function AdminPanel() {
 
   // Auth guard
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('vitthal_user') || 'null');
-    // Check for both isAdmin and role for compatibility with old/new sessions
-    if (!user || (!user.isAdmin && user.role !== 'admin')) {
-      addToast('Admin access required', 'error');
-      navigate('/login');
-    }
+    const verifyAdmin = async () => {
+      const token = localStorage.getItem('vitthal_token');
+      if (!token) {
+        addToast('Admin access required', 'error');
+        navigate('/login');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}/users/me`, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (!res.ok) {
+          throw new Error('Not authorized as an admin');
+        }
+
+        const data = await res.json();
+        if (!data.isAdmin) {
+          throw new Error('Not authorized as an admin');
+        }
+
+        setAdminVerified(true);
+      } catch (err) {
+        addToast('Admin access required', 'error');
+        navigate('/login');
+      }
+    };
+
+    verifyAdmin();
   }, [navigate, addToast]);
+
+  if (!adminVerified) {
+    return <div className="route-loading">Verifying admin access…</div>;
+  }
 
   // Save frame styles to localStorage
   useEffect(() => {

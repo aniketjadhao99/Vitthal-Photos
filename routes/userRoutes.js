@@ -50,6 +50,15 @@ const forgotLimiter = rateLimiter(5, 15 * 60 * 1000); // 5 requests per 15 min
 router.post('/', authLimiter, validateAuthInput, registerUser);
 router.post('/register', authLimiter, validateAuthInput, registerUser);
 router.post('/login', authLimiter, validateAuthInput, authUser);
+router.get('/me', protect, async (req, res) => {
+    res.json({
+        _id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        isAdmin: req.user.isAdmin,
+        role: req.user.isAdmin ? 'admin' : 'user'
+    });
+});
 router.put('/profile', protect, updateUserProfile);
 router.put('/profile/password', protect, updateUserPassword);
 router.post('/forgot-password', forgotLimiter, forgotPassword);

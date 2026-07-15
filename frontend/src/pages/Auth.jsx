@@ -42,20 +42,33 @@ const Auth = () => {
         throw new Error(data.message || 'Authentication failed');
       }
 
-      // Successful login/registration
+      // Save token immediately and verify the account on the server
       localStorage.setItem('vitthal_token', data.token);
-      localStorage.setItem('vitthal_user', JSON.stringify({ 
-        _id: data._id || data.id,
-        id: data._id || data.id,
-        name: data.name, 
-        email: data.email,
-        isAdmin: data.isAdmin,
-        role: data.isAdmin ? 'admin' : 'user'
+
+      const verifyRes = await fetch(`${API_URL}/users/me`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${data.token}`
+        }
+      });
+
+      const verified = await verifyRes.json();
+      if (!verifyRes.ok) {
+        throw new Error(verified.message || 'Authentication verification failed');
+      }
+
+      localStorage.setItem('vitthal_user', JSON.stringify({
+        _id: verified._id || data._id || data.id,
+        id: verified._id || data._id || data.id,
+        name: verified.name,
+        email: verified.email,
+        isAdmin: verified.isAdmin,
+        role: verified.isAdmin ? 'admin' : 'user'
       }));
-      
+
       addToast(isLogin ? 'Successfully logged in!' : 'Account created successfully!', 'success');
-      
-      if (data.isAdmin) {
+
+      if (verified.isAdmin) {
         navigate('/admin');
       } else {
         navigate('/profile');

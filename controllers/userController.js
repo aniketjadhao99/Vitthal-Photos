@@ -108,18 +108,19 @@ const authUser = async (req, res) => {
       return res.status(400).json({ message: 'Please provide email and password' });
     }
 
+    const searchEmail = email.toLowerCase();
     let user;
     try {
-      user = await prisma.user.findUnique({ where: { email } });
+      user = await prisma.user.findUnique({ where: { email: searchEmail } });
     } catch (prismaError) {
       console.warn('Prisma login failed, falling back to MongoDB...', prismaError.message);
-      user = await UserMongo.findOne({ email });
+      user = await UserMongo.findOne({ email: searchEmail });
       if (user) user.id = user._id.toString(); // Normalize ID
     }
 
     if (!user && !res.headersSent) {
       // If prisma didn't throw but user wasn't found, check Mongo anyway
-      user = await UserMongo.findOne({ email });
+      user = await UserMongo.findOne({ email: searchEmail });
       if (user) user.id = user._id.toString();
     }
 
