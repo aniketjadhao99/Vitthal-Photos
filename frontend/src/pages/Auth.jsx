@@ -45,7 +45,7 @@ const Auth = () => {
       // Save token immediately and verify the account on the server
       localStorage.setItem('vitthal_token', data.token);
 
-      const verifyRes = await fetch(`${API_URL}/users/me`, {
+       const verifyRes = await fetch(`${API_URL}/users/me`, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${data.token}`

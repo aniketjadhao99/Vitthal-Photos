@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import Reviews from '../components/Reviews';
 import CollectionsNav from '../components/CollectionsNav';
+import { normalizeImageUrl } from '../utils/imageUtils';
 import '../styles/CustomFrame.css';
 import Cropper from 'react-easy-crop';
 
