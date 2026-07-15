@@ -9,7 +9,6 @@ const Home = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const scrollRef = useRef(null);
-  const [collectionImages, setCollectionImages] = useState({ god: null, warriors: null, custom: null });
   const [trendingProducts, setTrendingProducts] = useState([]);
 
   useEffect(() => {
@@ -21,46 +20,12 @@ const Home = () => {
         if (!res.ok) return;
         const products = await res.json();
 
-        const usedImages = new Set();
-        const getProxyUrl = (url) => {
-          if (!url) return null;
-          return normalizeImageUrl(url);
-        };
-
-        const findUniqueImage = (categories) => {
-          const cats = Array.isArray(categories) ? categories : [categories];
-          for (const product of products) {
-            if (cats.includes(product.category) && product.images && product.images.length > 0) {
-              const rawUrl = product.images[0];
-              if (!usedImages.has(rawUrl)) {
-                const proxyUrl = getProxyUrl(rawUrl);
-                if (proxyUrl) {
-                  usedImages.add(rawUrl);
-                  return proxyUrl;
-                }
-              }
-            }
-          }
-          return null;
-        };
-
-        const godImg = findUniqueImage('God');
-        const warriorImg = findUniqueImage('Warriors');
-        const customImg = findUniqueImage(['New', 'Custom']) || findUniqueImage('Warriors') || findUniqueImage('God');
-
-        setCollectionImages({
-          god: godImg || '/assets/images/logo.png',
-          warriors: warriorImg || '/assets/images/logo.png',
-          custom: customImg || '/assets/images/logo.png'
-        });
-
         if (products.length > 0) {
           setTrendingProducts(products.slice(0, 6));
         }
-
       } catch (err) {
         if (err.name !== 'AbortError') {
-          console.error('Error loading data:', err);
+          console.error('Error loading trending products:', err);
         }
       }
     };
@@ -213,19 +178,19 @@ const Home = () => {
         <div className="collection-grid" id="collection-grid">
           <div className="collection" onClick={() => navigate('/god')} style={{ cursor: 'pointer' }}>
             <div className="collection-item">
-              <img width="640" height="420" src={collectionImages.god || "/assets/images/logo.png"} alt="God Frames" loading="lazy" decoding="async" />
+              <img width="640" height="420" src="/assets/images/collections/god-collection.svg" alt="God Frames" loading="lazy" decoding="async" />
               <div className="collection-label" style={{ position: 'absolute', bottom: '20px', left: '20px', background: 'rgba(255,255,255,0.95)', padding: '10px 22px', borderRadius: '10px', fontWeight: 700, color: '#333', fontSize: '1rem', zIndex: 5, boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>God Frames</div>
             </div>
           </div>
           <div className="collection" onClick={() => navigate('/warriors')} style={{ cursor: 'pointer' }}>
             <div className="collection-item">
-              <img width="640" height="420" src={collectionImages.warriors || "/assets/images/logo.png"} alt="Warrior Frames" loading="lazy" decoding="async" />
+              <img width="640" height="420" src="/assets/images/collections/warrior-collection.svg" alt="Warrior Frames" loading="lazy" decoding="async" />
               <div className="collection-label" style={{ position: 'absolute', bottom: '20px', left: '20px', background: 'rgba(255,255,255,0.95)', padding: '10px 22px', borderRadius: '10px', fontWeight: 700, color: '#333', fontSize: '1rem', zIndex: 5, boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Warrior Frames</div>
             </div>
           </div>
           <div className="collection" onClick={() => navigate('/custom')} style={{ cursor: 'pointer' }}>
             <div className="collection-item">
-              <img width="640" height="420" src={collectionImages.custom || "/assets/images/logo.png"} alt="Custom Frames" loading="lazy" decoding="async" />
+              <img width="640" height="420" src="/assets/images/collections/custom-collection.svg" alt="Custom Frames" loading="lazy" decoding="async" />
               <div className="collection-label" style={{ position: 'absolute', bottom: '20px', left: '20px', background: 'rgba(255,255,255,0.95)', padding: '10px 22px', borderRadius: '10px', fontWeight: 700, color: '#333', fontSize: '1rem', zIndex: 5, boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Custom Frames</div>
             </div>
           </div>

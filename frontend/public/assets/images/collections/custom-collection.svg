@@ -1,0 +1,24 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="frameGrad" x1="800" y1="160" x2="800" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FBE8C9"/>
+      <stop offset="1" stop-color="#E7B87D"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" rx="40" fill="#F9F3EE"/>
+  <rect x="220" y="180" width="1160" height="540" rx="40" fill="url(#frameGrad)" stroke="#C38857" stroke-width="24"/>
+  <rect x="300" y="260" width="1000" height="360" rx="30" fill="#FFFFFF"/>
+  <path d="M340 320H1160" stroke="#E2B477" stroke-width="24" stroke-linecap="round"/>
+  <path d="M340 510H1160" stroke="#E2B477" stroke-width="24" stroke-linecap="round"/>
+  <path d="M450 260L530 340" stroke="#A86532" stroke-width="24" stroke-linecap="round"/>
+  <path d="M1060 580L1140 500" stroke="#A86532" stroke-width="24" stroke-linecap="round"/>
+  <circle cx="510" cy="450" r="40" fill="#F1D6A2"/>
+  <circle cx="1030" cy="450" r="40" fill="#F1D6A2"/>
+  <path d="M450 340L520 410" stroke="#7A4D2B" stroke-width="18" stroke-linecap="round"/>
+  <path d="M1050 520L1120 450" stroke="#7A4D2B" stroke-width="18" stroke-linecap="round"/>
+  <path d="M690 630L760 560" stroke="#D8863F" stroke-width="18" stroke-linecap="round"/>
+  <path d="M760 560L830 630" stroke="#D8863F" stroke-width="18" stroke-linecap="round"/>
+  <path d="M845 404L965 404" stroke="#E79C5D" stroke-width="18" stroke-linecap="round"/>
+  <path d="M845 455L965 455" stroke="#E79C5D" stroke-width="18" stroke-linecap="round"/>
+  <text x="800" y="840" text-anchor="middle" fill="#7A4A20" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="700">Custom Art</text>
+</svg>
