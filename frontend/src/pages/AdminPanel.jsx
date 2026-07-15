@@ -57,6 +57,25 @@ const btn = (bg) => ({
   marginRight: '6px', fontWeight: 600
 });
 
+const downloadImageFile = async (imageUrl, fileName = 'custom-frame-image.png') => {
+  if (!imageUrl) return;
+  try {
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Image download failed:', error);
+    alert('Unable to download the selected image.');
+  }
+};
+
 const emptyProduct = { name: '', description: '', basePrice: '', category: 'God', stock: '', sku: '', images: [''] };
 
 export default function AdminPanel() {
@@ -1449,7 +1468,7 @@ export default function AdminPanel() {
             {selectedOrder.orderItems.map((it, i) => (
               <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'16px', borderRadius: '8px', background:'#f9f9f9', marginBottom:'12px', border:'1px solid #f1f5f9' }}>
                 <div style={{ display:'flex', gap:12, flex: 1 }}>
-                  {it.product?.images?.[0] && <img src={it.product.images[0]} style={{ width:60, height:60, objectFit:'cover', borderRadius:8 }} alt=""/>}
+                  {(it.customization?.userUploadedImage || it.product?.images?.[0]) && <img src={it.customization?.userUploadedImage || it.product.images[0]} style={{ width:60, height:60, objectFit:'cover', borderRadius:8 }} alt="" />}
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight:700, marginBottom: '4px' }}>{it.name}</div>
                     {it.product?.sku && <div style={{ fontSize:'0.8rem', color:'#64748b' }}>SKU: <strong>{it.product.sku}</strong></div>}
@@ -1460,12 +1479,28 @@ export default function AdminPanel() {
                     )}
                     <div style={{ fontSize:'0.8rem', color:'#64748b', marginTop: '4px' }}>
                       Qty: {it.quantity}
-                      {it.customization?.selectedSize && ` | Size: ${it.customization.selectedSize}`}
+                      {(it.customization?.selectedSize || it.size) && ` | Size: ${it.customization?.selectedSize || it.size}`}
                       {it.customization?.selectedColor && ` | Color: ${it.customization.selectedColor}`}
+                      {it.customization?.orientation && ` | Orientation: ${it.customization.orientation}`}
                     </div>
                     {it.customization?.hasCustomization && (
                       <div style={{ fontSize:'0.75rem', color:'#fb923c', marginTop: '6px', padding: '4px 8px', background: '#fff3e0', borderRadius: '4px', display: 'inline-block' }}>
                         ✓ Custom Image Used
+                      </div>
+                    )}
+                    {it.customization?.userUploadedImage && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+                        <img
+                          src={it.customization.userUploadedImage}
+                          alt="Selected custom"
+                          style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 12, border: '1px solid #ddd' }}
+                        />
+                        <button
+                          onClick={() => downloadImageFile(it.customization.userUploadedImage, `${(it.name || 'custom-image').replace(/\s+/g, '_')}.png`)}
+                          style={{ ...btn('#3b82f6'), padding: '10px 14px', marginRight: 0 }}
+                        >
+                          Download Selected Image
+                        </button>
                       </div>
                     )}
                     {it.product?._id && (

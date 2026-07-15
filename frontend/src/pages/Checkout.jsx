@@ -381,17 +381,19 @@ const Checkout = () => {
         price: item.price,
         product: item._id,
         size: item.size || 'Standard',
-        customization: item.customizations || {
-          hasCustomization: !!item.image,
-          userUploadedImage: item.image || null,
-          selectedSize: item.size || null,
-          selectedFrame: item.frameStyle || null,
-          selectedColor: item.color || null,
-          material: item.material || null,
-          glassFinish: item.glassFinish || null,
-          mattingStyle: item.mattingStyle || null,
-          orientation: item.orientation || null,
-          textContent: item.textContent || null
+        customization: {
+          ...(item.customizations || {}),
+          hasCustomization: !!item.image || !!item.customizations,
+          userUploadedImage: item.image || item.customizations?.userUploadedImage || null,
+          selectedSize: item.customizations?.selectedSize || item.size || null,
+          selectedFrame: item.customizations?.frameStyle || item.frameStyle || null,
+          selectedColor: item.customizations?.selectedColor || item.color || null,
+          material: item.customizations?.material || item.material || null,
+          glassFinish: item.customizations?.glassFinish || item.glassFinish || null,
+          mattingStyle: item.customizations?.mattingStyle || item.mattingStyle || null,
+          orientation: item.customizations?.orientation || item.orientation || null,
+          textContent: item.customizations?.textContent || item.textContent || null,
+          addText: item.customizations?.addText || item.addText || false
         }
       }));
 

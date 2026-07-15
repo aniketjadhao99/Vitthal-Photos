@@ -287,7 +287,9 @@ const CustomFrame = () => {
         glassFinish,
         mattingStyle,
         textContent,
-        addText
+        addText,
+        orientation,
+        selectedSize: sizeAndPrice.size
       }
     };
     
