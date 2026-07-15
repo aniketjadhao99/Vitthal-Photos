@@ -1,0 +1,25 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sunGrad" x1="800" y1="100" x2="800" y2="500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5C148"/>
+      <stop offset="1" stop-color="#E47A17"/>
+    </linearGradient>
+    <linearGradient id="lotusGrad" x1="800" y1="320" x2="800" y2="560" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F9F0E2"/>
+      <stop offset="1" stop-color="#D89A61"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" rx="40" fill="#FDF5E7"/>
+  <circle cx="800" cy="320" r="180" fill="url(#sunGrad)" opacity="0.9"/>
+  <path d="M790 430C840 430 860 360 860 360C860 360 890 410 940 410C990 410 1030 360 1030 360C1030 360 1030 470 930 580C930 580 820 540 790 540C760 540 650 580 650 580C550 470 550 360 550 360C550 360 590 410 640 410C690 410 720 360 720 360C720 360 740 430 790 430Z" fill="url(#lotusGrad)"/>
+  <path d="M800 200L800 110" stroke="#C97317" stroke-width="20" stroke-linecap="round"/>
+  <path d="M740 220L740 140" stroke="#C97317" stroke-width="16" stroke-linecap="round"/>
+  <path d="M860 220L860 140" stroke="#C97317" stroke-width="16" stroke-linecap="round"/>
+  <rect x="530" y="560" width="540" height="220" rx="110" fill="#F7E4C5"/>
+  <g opacity="0.95">
+    <path d="M720 620C720 620 760 580 800 620C840 580 880 620 880 620L860 680L780 780L720 680L720 620Z" fill="#DA802F"/>
+    <path d="M900 640C900 640 930 620 940 640C950 660 940 700 940 700L900 700L900 640Z" fill="#F5C148"/>
+    <path d="M680 640C680 640 650 620 640 640C630 660 640 700 640 700L680 700L680 640Z" fill="#F5C148"/>
+  </g>
+  <text x="800" y="820" text-anchor="middle" fill="#7A4A20" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="700">Divine Frames</text>
+</svg>
