@@ -276,6 +276,11 @@ export default function AdminPanel() {
 
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const token = localStorage.getItem('vitthal_token');
+  const headers = useMemo(() => ({
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  }), [token]);
 
   // Auth guard
   useEffect(() => {
@@ -314,22 +319,6 @@ export default function AdminPanel() {
     verifyAdmin();
   }, [navigate, addToast]);
 
-  if (!adminVerified) {
-    return <div className="route-loading">Verifying admin access…</div>;
-  }
-
-  // Save frame styles to localStorage
-  useEffect(() => {
-    localStorage.setItem('vitthal_frameStyles', JSON.stringify(frameStyles));
-  }, [frameStyles]);
-
-  const token = localStorage.getItem('vitthal_token');
-  const headers = useMemo(() => ({ 
-    'Content-Type': 'application/json', 
-    ...(token ? { Authorization: `Bearer ${token}` } : {}) 
-  }), [token]);
-
-  // --- Data loaders with error handling ---
   const loadProducts = useCallback(async () => {
     try {
       const r = await fetch(`${API}/products`);
@@ -414,6 +403,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!adminVerified) return;
       setLoading(true);
       try {
         if (tab === 'dashboard') { 
@@ -437,7 +427,7 @@ export default function AdminPanel() {
       }
     };
     fetchData();
-  }, [tab, loadProducts, loadOrders, loadUsers, loadReviews, loadCoupons, loadReturns, loadSettings]);
+  }, [adminVerified, tab, loadProducts, loadOrders, loadUsers, loadReviews, loadCoupons, loadReturns, loadSettings]);
 
   const [imageFile, setImageFile] = useState(null);
 
@@ -604,6 +594,10 @@ export default function AdminPanel() {
       }
     } catch { addToast('Network error', 'error'); }
   };
+
+  if (!adminVerified) {
+    return <div className="route-loading">Verifying admin access…</div>;
+  }
 
   // ===================== RENDER =====================
   return (
